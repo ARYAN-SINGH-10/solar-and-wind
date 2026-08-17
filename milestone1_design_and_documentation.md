@@ -36,10 +36,10 @@ flowchart TD
     E --> F[Create Renewable Energy Project]
     F --> G[Create Candidate Site]
     G --> H[Enter Site Coordinates & Specs]
-    H --> I{Coordinate Bounds Validation\nLat: -90..90 | Lon: -180..180}
-    I -- Valid --> J[PostgreSQL + PostGIS Storage\nPOINT: lon lat, SRID 4326]
-    J --> K[GIS Map Engine Visualization\nLeaflet 10-Layer Overlay]
-    K --> L[Fetch Environmental Feeds\nNASA POWER / Open-Meteo]
+    H --> I{Coordinate Bounds Validation<br/>Lat: -90..90 and Lon: -180..180}
+    I -- Valid --> J[PostgreSQL + PostGIS Storage<br/>POINT: lon lat, SRID 4326]
+    J --> K[GIS Map Engine Visualization<br/>Leaflet 10-Layer Overlay]
+    K --> L[Fetch Environmental Feeds<br/>NASA POWER / Open-Meteo]
     L --> M[Environmental Data Available]
     M --> N[Ready for Renewable Analysis Modules]
 ```
@@ -110,7 +110,7 @@ erDiagram
 
     ROLES {
         int id PK
-        string role_name "ENERGY_PLANNER | GIS_ANALYST | PROJECT_MANAGER | ADMINISTRATOR"
+        string role_name "ENERGY_PLANNER, GIS_ANALYST, PROJECT_MANAGER, ADMINISTRATOR"
         string description
     }
 
@@ -133,7 +133,7 @@ erDiagram
         text description
         numeric land_area
         uuid created_by FK
-        string status "DRAFT | ACTIVE | COMPLETED"
+        string status "DRAFT, ACTIVE, COMPLETED"
         timestamp created_at
     }
 
@@ -149,7 +149,7 @@ erDiagram
         numeric elevation
         string land_ownership
         text existing_infrastructure
-        string status "PROPOSED | DATA_COLLECTED | ANALYZED"
+        string status "PROPOSED, DATA_COLLECTED, ANALYZED"
         timestamp created_at
     }
 

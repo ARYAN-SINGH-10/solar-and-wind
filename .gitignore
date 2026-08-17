@@ -1,0 +1,33 @@
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+
+# Build & Coverage
+dist/
+build/
+coverage/
+*.log
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+
+# Database & OS
+.DS_Store
+Thumbs.db
+postgres_data/
+*.sqlite3

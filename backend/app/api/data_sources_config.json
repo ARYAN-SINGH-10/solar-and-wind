@@ -1,0 +1,38 @@
+[
+  {
+    "id": "ds_nasa_power",
+    "name": "NASA POWER Meteorological Satellite API",
+    "type": "Solar GHI / DNI & Climate",
+    "api_status": "CONNECTED",
+    "last_sync": "2026-08-17T14:39:21.259381+00:00",
+    "is_active": true,
+    "endpoint": "https://power.larc.nasa.gov/api/temporal/daily/point"
+  },
+  {
+    "id": "ds_open_meteo",
+    "name": "Open-Meteo & Global Wind Atlas",
+    "type": "100m Wind Speed & Vectors",
+    "api_status": "CONNECTED",
+    "last_sync": "2026-08-17T14:39:21.259399+00:00",
+    "is_active": true,
+    "endpoint": "https://api.open-meteo.com/v1/forecast"
+  },
+  {
+    "id": "ds_osm_overpass",
+    "name": "OpenStreetMap Overpass API",
+    "type": "Roads & Grid Infrastructure",
+    "api_status": "CONNECTED",
+    "last_sync": "2026-08-17T14:39:21.259404+00:00",
+    "is_active": true,
+    "endpoint": "https://overpass-api.de/api/interpreter"
+  },
+  {
+    "id": "ds_srtm_dem",
+    "name": "SRTM Digital Elevation Model",
+    "type": "PostGIS Terrain Slope",
+    "api_status": "ACTIVE",
+    "last_sync": "2026-08-17T14:39:21.259407+00:00",
+    "is_active": true,
+    "endpoint": "Local PostGIS Spatial Raster Layer"
+  }
+]

@@ -1,0 +1,52 @@
+@import 'leaflet/dist/leaflet.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #F97316;
+  --primary-dark: #EA580C;
+  --primary-light: #FFF7ED;
+  --primary-very-light: #FFEDD5;
+  --primary-border: #FDBA74;
+  --background: #F8FAFC;
+  --surface: #FFFFFF;
+  --text-primary: #171717;
+  --text-secondary: #6B7280;
+  --text-muted: #9CA3AF;
+  --border: #E5E7EB;
+  --border-light: #F3F4F6;
+  --success: #16A34A;
+  --warning: #F59E0B;
+  --danger: #DC2626;
+  --info: #2563EB;
+}
+
+@layer base {
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--background);
+    color: var(--text-primary);
+  }
+}
+
+/* Custom scrollbar styling for modern enterprise light theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+

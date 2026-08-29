@@ -29,19 +29,19 @@ Milestone 1 establishes the foundational infrastructure, security, data persiste
 
 ```mermaid
 flowchart TD
-    A[Landing Page] --> B[User Registration]
-    B --> C[User Login & JWT Generation]
-    C --> D[Role Verification & Access Control]
-    D --> E[Role-Based Dashboard]
-    E --> F[Create Renewable Energy Project]
-    F --> G[Create Candidate Site]
-    G --> H[Enter Site Coordinates & Specs]
-    H --> I{Coordinate Bounds Validation<br/>Lat: -90..90 and Lon: -180..180}
-    I -- Valid --> J[PostgreSQL + PostGIS Storage<br/>POINT: lon lat, SRID 4326]
-    J --> K[GIS Map Engine Visualization<br/>Leaflet 10-Layer Overlay]
-    K --> L[Fetch Environmental Feeds<br/>NASA POWER / Open-Meteo]
-    L --> M[Environmental Data Available]
-    M --> N[Ready for Renewable Analysis Modules]
+    A["Landing Page"] --> B["User Registration"]
+    B --> C["User Login & JWT Generation"]
+    C --> D["Role Verification & Access Control"]
+    D --> E["Role-Based Dashboard"]
+    E --> F["Create Renewable Energy Project"]
+    F --> G["Create Candidate Site"]
+    G --> H["Enter Site Coordinates & Specs"]
+    H --> I{"Coordinate Bounds Validation<br/>Lat: -90..90 and Lon: -180..180"}
+    I -- Valid --> J["PostgreSQL + PostGIS Storage<br/>POINT: lon lat, SRID 4326"]
+    J --> K["GIS Map Engine Visualization<br/>Leaflet 10-Layer Overlay"]
+    K --> L["Fetch Environmental Feeds<br/>NASA POWER / Open-Meteo"]
+    L --> M["Environmental Data Available"]
+    M --> N["Ready for Renewable Analysis Modules"]
 ```
 
 ---
@@ -79,14 +79,14 @@ graph TD
         OverpassOSM["OpenStreetMap Overpass (Infrastructure)"]
     end
 
-    Client <-->|HTTP / Port 80| ReactApp
-    ReactApp <-->|REST JSON / Port 8000| FastAPIApp
+    Client <-->|"HTTP / Port 80"| ReactApp
+    ReactApp <-->|"REST JSON / Port 8000"| FastAPIApp
     FastAPIApp --> AuthGuard
     FastAPIApp --> Services
     Services --> ORM
-    ORM <-->|SQL / PostGIS WKT| PostgresEngine
+    ORM <-->|"SQL / PostGIS WKT"| PostgresEngine
     PostgresEngine <--> PostGISModule
-    Services <-->|Async HTTP Requests| Feeds
+    Services <-->|"Async HTTP Requests"| Feeds
 ```
 
 ### Layer Responsibilities:
@@ -141,9 +141,9 @@ erDiagram
         uuid id PK
         uuid project_id FK
         string site_name
-        numeric latitude "Decimal (-90..90)"
-        numeric longitude "Decimal (-180..180)"
-        geometry location "Point, SRID 4326 [lon, lat]"
+        numeric latitude "Decimal -90 to 90"
+        numeric longitude "Decimal -180 to 180"
+        geometry location "Point SRID 4326 lon lat"
         string region
         numeric land_area
         numeric elevation
@@ -156,13 +156,13 @@ erDiagram
     ENVIRONMENTAL_DATA {
         uuid id PK
         uuid site_id FK
-        numeric solar_irradiance "GHI (kWh/m²/yr)"
-        numeric wind_speed "100m Speed (m/s)"
-        numeric wind_direction "Degrees (0..360)"
+        numeric solar_irradiance "GHI kWh/m2/yr"
+        numeric wind_speed "100m Speed m/s"
+        numeric wind_direction "Degrees 0 to 360"
         numeric temperature "Celsius"
         numeric rainfall "mm/yr"
-        numeric humidity "%"
-        numeric cloud_cover "%"
+        numeric humidity "Percentage"
+        numeric cloud_cover "Percentage"
         numeric elevation "m ASL"
         numeric land_slope "Degrees"
         string data_source "NASA POWER / Open-Meteo"

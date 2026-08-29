@@ -5,10 +5,29 @@
 
 ## 1. Project Objectives
 
-The **Solar & Wind Deployment Intelligence Platform** is an enterprise-grade web application created to assist renewable energy planners, GIS analysts, and project managers in evaluating, cataloging, and managing candidate deployment sites for utility-scale solar PV and wind turbine infrastructure.
+The **Solar & Wind Deployment Intelligence Platform** is an enterprise-grade web application designed to assist renewable energy planners, GIS analysts, and project managers in evaluating, cataloging, analyzing, and managing candidate deployment sites for utility-scale solar PV and wind turbine infrastructure.
 
-### Deterministic Policy Statement (Zero AI / ML)
-The platform relies strictly on **reproducible physics equations, geospatial vector queries (PostGIS), and multi-criteria decision analysis (MCDA)**. It intentionally does **NOT** use Artificial Intelligence (AI), Machine Learning (ML), Deep Learning, neural networks, or black-box predictive models. All calculations are 100% auditable and reproducible.
+The platform provides an integrated workflow for:
+
+- **Project and Site Management** — Create renewable-energy projects and register candidate deployment sites with geographic coordinates and site specifications.
+- **Environmental Data Integration** — Retrieve and utilize environmental parameters such as solar irradiance, temperature, wind speed, humidity, cloud cover, and precipitation from external data sources.
+- **GIS-Based Analysis** — Use PostgreSQL/PostGIS spatial capabilities and Leaflet-based mapping to visualize and analyze candidate locations.
+- **Solar and Wind Assessment** — Calculate solar energy generation potential and wind power characteristics using transparent, reproducible engineering equations.
+- **Site Suitability Evaluation** — Evaluate candidate sites using multi-criteria decision analysis (MCDA) based on renewable resources, geographic conditions, infrastructure, environmental factors, and economic considerations.
+- **Energy Forecasting and Optimization** — Generate long-term energy and revenue forecasts and evaluate deployment configurations using deterministic calculation methods.
+- **Investment and Technology Recommendations** — Provide decision-support information for technology selection, investment planning, and candidate-site comparison.
+- **AI/ML Intelligence** — Provide additional machine-learning-based predictions, classifications, rankings, investment insights, and technology recommendations alongside the deterministic analysis.
+- **Reporting and Comparison** — Generate reports and compare multiple candidate sites to support renewable-energy deployment decisions.
+
+### Deterministic Foundation and AI/ML Intelligence
+
+The platform is built on a **deterministic engineering and geospatial foundation** using reproducible renewable-energy physics equations, PostgreSQL/PostGIS spatial analytics, and multi-criteria decision analysis (MCDA). These deterministic calculations provide transparent, auditable, and reproducible baseline results for solar generation, wind analysis, site suitability, forecasting, optimization, and deployment planning.
+
+A **supplemental AI/ML intelligence layer** is integrated on top of this foundation to provide additional predictions, classifications, candidate rankings, investment insights, and technology recommendations. The AI/ML layer does **not replace the authoritative deterministic calculations**. Instead, its outputs are presented as additional intelligence to support analysis and decision-making.
+
+The AI/ML models are trained using a **5,000-sample synthetic development dataset calibrated using renewable-energy physical relationships**. Their outputs are therefore intended for development and decision-support purposes and should be validated against real-world operational and site-specific data before commercial deployment.
+
+All deterministic engineering calculations remain **auditable and reproducible**, while AI/ML outputs are clearly identified as model-based predictions or recommendations.
 
 ---
 

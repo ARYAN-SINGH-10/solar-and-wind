@@ -7,8 +7,8 @@
 
 The **Solar & Wind Deployment Intelligence Platform** is an enterprise-grade web application created to assist renewable energy planners, GIS analysts, and project managers in evaluating, cataloging, and managing candidate deployment sites for utility-scale solar PV and wind turbine infrastructure.
 
-### Deterministic Policy Statement (Zero AI / ML)
-The platform relies strictly on **reproducible physics equations, geospatial vector queries (PostGIS), and multi-criteria decision analysis (MCDA)**. It intentionally does **NOT** use Artificial Intelligence (AI), Machine Learning (ML), Deep Learning, neural networks, or black-box predictive models. All calculations are 100% auditable and reproducible.
+### Milestone 1 Deterministic Foundation
+Milestone 1 establishes the deterministic physics, geospatial, database, authentication, and environmental-data foundation of the platform. Subsequent platform capabilities, including forecasting, optimization, and the supplemental AI/ML intelligence layer, build on this foundation without replacing the authoritative deterministic calculations. All physical engineering calculations remain 100% auditable and reproducible.
 
 ---
 
@@ -187,7 +187,7 @@ The platform enforces authentication via signed JSON Web Tokens (JWT, HS256) con
 
 ## 7. UI / Workflow Screens
 
-1. **Landing Page (`/`)**: Hero banner with deterministic policy pill tag, quick metrics, feature cards, and workflow step guide.
+1. **Landing Page (`/`)**: Hero banner with deterministic foundation pill tag, quick metrics, feature cards, and workflow step guide.
 2. **Register Page (`/register`)**: Account creation form with Name, Email, Password, Organization, and Role Selector.
 3. **Login Page (`/login`)**: Authentication form returning JWT Bearer token upon credential verification.
 4. **Dashboard (`/`)**: Overview metrics cards (Total Projects, Sites, Mapped Area) and 4 tabbed role perspectives.

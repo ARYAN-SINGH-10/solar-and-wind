@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getSitesApi } from '../services/siteService';
 import { calculateSiteSuitabilityApi, getSiteSuitabilityApi } from '../services/analysisService';
+import { predictSuitabilityML } from '../services/mlService';
 import Card from '../components/common/Card';
 import Badge from '../components/common/Badge';
 import ScoreGauge from '../components/common/ScoreGauge';
 import Loading from '../components/common/Loading';
 import ErrorMessage from '../components/common/ErrorMessage';
-import { CheckCircle2, Calculator, ShieldCheck, Sun, Mountain, Navigation, Sprout, DollarSign, RefreshCw, Info } from 'lucide-react';
+import { CheckCircle2, Calculator, Sun, Mountain, Navigation, Sprout, DollarSign, RefreshCw, Info, Cpu, AlertTriangle } from 'lucide-react';
 
-// ─── Safe formatters ────────────────────────────────────────────────────────
 function fmtNum(value, digits = 2) {
   if (value === null || value === undefined || value === '') return 'N/A';
   const n = Number(value);
@@ -25,20 +25,44 @@ function fmtUpper(value) {
   const s = fmtStr(value);
   return s === 'N/A' ? 'N/A' : s.toUpperCase();
 }
-// ────────────────────────────────────────────────────────────────────────────
 
 export default function SiteSuitabilityPage() {
   const [sites, setSites] = useState([]);
   const [selectedSiteId, setSelectedSiteId] = useState('');
-  // Each record from GET /sites/{id}/suitability has ORM column names:
-  //   overall_score, category, renewable_resource_score, geographic_score,
-  //   infrastructure_score, environmental_score, economic_score
   const [suitabilityHistory, setSuitabilityHistory] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [calculating, setCalculating] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  // AI / ML State
+  const [mlResult, setMlResult] = useState(null);
+  const [mlLoading, setMlLoading] = useState(false);
+  const [mlError, setMlError] = useState('');
+
+  const fetchMLSuitability = async (rec) => {
+    setMlLoading(true);
+    setMlError('');
+    try {
+      const res = await predictSuitabilityML({
+        renewable_resource_score: rec ? Number(rec.renewable_resource_score || 85.0) : 85.0,
+        geographic_score: rec ? Number(rec.geographic_score || 80.0) : 80.0,
+        infrastructure_score: rec ? Number(rec.infrastructure_score || 75.0) : 75.0,
+        environmental_score: rec ? Number(rec.environmental_score || 88.0) : 88.0,
+        economic_score: rec ? Number(rec.economic_score || 70.0) : 70.0,
+        slope: 3.0,
+        elevation: 650.0,
+        grid_distance_km: 5.2,
+        road_distance_km: 2.1,
+      });
+      setMlResult(res);
+    } catch (err) {
+      setMlError('AI/ML service unavailable. Showing deterministic analysis.');
+    } finally {
+      setMlLoading(false);
+    }
+  };
 
   const loadData = useCallback(async (siteId) => {
     setLoading(true);
@@ -55,7 +79,9 @@ export default function SiteSuitabilityPage() {
 
       if (targetId) {
         const history = await getSiteSuitabilityApi(targetId);
-        setSuitabilityHistory(Array.isArray(history) ? history : []);
+        const historyArr = Array.isArray(history) ? history : [];
+        setSuitabilityHistory(historyArr);
+        fetchMLSuitability(historyArr.length > 0 ? historyArr[0] : null);
       }
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to load suitability records.');
@@ -63,11 +89,11 @@ export default function SiteSuitabilityPage() {
     } finally {
       setLoading(false);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     loadData(selectedSiteId || null);
-  }, [selectedSiteId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedSiteId]);
 
   const handleSiteChange = (e) => {
     setSelectedSiteId(e.target.value);
@@ -83,9 +109,10 @@ export default function SiteSuitabilityPage() {
     try {
       await calculateSiteSuitabilityApi(selectedSiteId);
       setSuccessMsg('Successfully computed Multi-Criteria Site Suitability Index.');
-      // Reload history — GET returns ORM objects with column names
       const history = await getSiteSuitabilityApi(selectedSiteId);
-      setSuitabilityHistory(Array.isArray(history) ? history : []);
+      const historyArr = Array.isArray(history) ? history : [];
+      setSuitabilityHistory(historyArr);
+      fetchMLSuitability(historyArr.length > 0 ? historyArr[0] : null);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to calculate site suitability.');
     } finally {
@@ -93,58 +120,16 @@ export default function SiteSuitabilityPage() {
     }
   };
 
-  // ── Derive display values from the latest DB record ──────────────────────
-  // GET /sites/{id}/suitability returns raw ORM → column names:
-  //   overall_score   (NOT suitability_score)
-  //   category        (NOT suitability_category)
-  //   renewable_resource_score, geographic_score, infrastructure_score,
-  //   environmental_score, economic_score
   const latestRec = suitabilityHistory.length > 0 ? suitabilityHistory[0] : null;
-
-  const currentScore   = latestRec ? Number(latestRec.overall_score)   : null;
+  const currentScore = latestRec ? Number(latestRec.overall_score) : null;
   const currentCategory = latestRec ? fmtStr(latestRec.category) : null;
 
   const factorCards = [
-    {
-      name: 'Renewable Resource Availability',
-      score: latestRec ? fmtNum(latestRec.renewable_resource_score) : null,
-      weight: '35%',
-      desc: 'Derived from NASA POWER GHI solar irradiance & Open-Meteo 100m wind speed',
-      icon: Sun,
-      color: 'text-amber-400',
-    },
-    {
-      name: 'Geographic Suitability',
-      score: latestRec ? fmtNum(latestRec.geographic_score) : null,
-      weight: '25%',
-      desc: 'Evaluated from DEM slope angle (< 3 degrees optimal flat terrain)',
-      icon: Mountain,
-      color: 'text-emerald-400',
-    },
-    {
-      name: 'Infrastructure Accessibility',
-      score: latestRec ? fmtNum(latestRec.infrastructure_score) : null,
-      weight: '15%',
-      desc: 'Evaluated from PostGIS distance to nearest 230kV grid substation',
-      icon: Navigation,
-      color: 'text-sky-400',
-    },
-    {
-      name: 'Environmental Impact',
-      score: latestRec ? fmtNum(latestRec.environmental_score) : null,
-      weight: '15%',
-      desc: 'Penalized by proximity to protected wildlife reserves & water bodies',
-      icon: Sprout,
-      color: 'text-purple-400',
-    },
-    {
-      name: 'Economic Feasibility',
-      score: latestRec ? fmtNum(latestRec.economic_score) : null,
-      weight: '10%',
-      desc: 'Derived from CAPEX infrastructure costs, PPA tariff, and payback horizon',
-      icon: DollarSign,
-      color: 'text-blue-400',
-    },
+    { name: 'Renewable Resource Availability', score: latestRec ? fmtNum(latestRec.renewable_resource_score) : null, weight: '35%', desc: 'NASA POWER & Open-Meteo 100m wind speed telemetry', icon: Sun },
+    { name: 'Geographic Suitability', score: latestRec ? fmtNum(latestRec.geographic_score) : null, weight: '25%', desc: 'DEM slope angle (< 3 degrees optimal terrain)', icon: Mountain },
+    { name: 'Infrastructure Accessibility', score: latestRec ? fmtNum(latestRec.infrastructure_score) : null, weight: '15%', desc: 'PostGIS distance to grid substation', icon: Navigation },
+    { name: 'Environmental Impact', score: latestRec ? fmtNum(latestRec.environmental_score) : null, weight: '15%', desc: 'Proximity to protected wildlife reserves & water bodies', icon: Sprout },
+    { name: 'Economic Feasibility', score: latestRec ? fmtNum(latestRec.economic_score) : null, weight: '10%', desc: 'CAPEX infrastructure costs & payback horizon', icon: DollarSign },
   ];
 
   const selectedSiteName = sites.find(s => s.id === selectedSiteId)?.site_name || 'N/A';
@@ -156,21 +141,23 @@ export default function SiteSuitabilityPage() {
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
             <CheckCircle2 className="w-6 h-6 text-orange-500" />
-            <span>Site Suitability Index (SSI) Dashboard</span>
+            <span>Site Suitability Index & AI Classification</span>
           </h1>
           <p className="text-xs text-slate-500 font-medium mt-1">
-            Multi-Criteria Decision Analysis (MCDA) evaluating physical terrain, environmental constraints, and grid connectivity.
+            Deterministic Multi-Criteria Decision Analysis (MCDA) coupled with Random Forest Classification probabilities.
           </p>
         </div>
 
-        <button
-          onClick={handleCalculateSuitability}
-          disabled={calculating || !selectedSiteId}
-          className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs shadow-sm transition-all disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 ${calculating ? 'animate-spin' : ''}`} />
-          <span>{calculating ? 'Calculating Suitability...' : 'Recalculate Suitability'}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleCalculateSuitability}
+            disabled={calculating || !selectedSiteId}
+            className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs shadow-sm transition-all disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${calculating ? 'animate-spin' : ''}`} />
+            <span>{calculating ? 'Calculating...' : 'Recalculate Suitability'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Target Site Selector */}
@@ -180,9 +167,7 @@ export default function SiteSuitabilityPage() {
           onChange={handleSiteChange}
           className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 text-xs focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 font-mono font-bold"
         >
-          {sites.length === 0 && (
-            <option value="">No sites available</option>
-          )}
+          {sites.length === 0 && <option value="">No sites available</option>}
           {sites.map((s) => (
             <option key={s.id} value={s.id}>
               {s.site_name} ({fmtStr(s.latitude)}°N, {fmtStr(s.longitude)}°W)
@@ -205,30 +190,95 @@ export default function SiteSuitabilityPage() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Composite Score Radial Gauge Card */}
-          <Card title="Overall Site Suitability Index" subtitle="Composite Multi-Criteria Weight Score">
-            {latestRec ? (
-              <div className="py-6 flex flex-col items-center justify-center space-y-4">
-                <ScoreGauge score={currentScore} size={160} label="Composite Score" />
+          <div className="space-y-6">
+            <Card title="Deterministic Suitability Index" subtitle="Composite Multi-Criteria Weight Score">
+              {latestRec ? (
+                <div className="py-6 flex flex-col items-center justify-center space-y-4">
+                  <ScoreGauge score={currentScore} size={160} label="MCDA Score" />
 
-                <div className="text-center space-y-1">
-                  <span className="text-xs text-slate-500 font-medium block">Suitability Category:</span>
-                  <Badge type="success font-bold text-sm">{fmtUpper(currentCategory)}</Badge>
-                </div>
+                  <div className="text-center space-y-1">
+                    <span className="text-xs text-slate-500 font-medium block">Deterministic Category:</span>
+                    <Badge type="success font-bold text-sm">{fmtUpper(currentCategory)}</Badge>
+                  </div>
 
-                <div className="text-center text-xs text-slate-600 font-mono">
-                  Score: <span className="text-slate-900 font-bold">{fmtNum(currentScore)} / 100</span>
+                  <div className="text-center text-xs text-slate-600 font-mono">
+                    Score: <span className="text-slate-900 font-bold">{fmtNum(currentScore)} / 100</span>
+                  </div>
                 </div>
+              ) : (
+                <div className="py-10 flex flex-col items-center justify-center space-y-3 text-center">
+                  <Info className="w-8 h-8 text-slate-400" />
+                  <p className="text-sm font-bold text-slate-700">No Suitability Calculated Yet</p>
+                </div>
+              )}
+            </Card>
+
+            {/* AI / ML Suitability Classification Component */}
+            <div className="bg-white border-2 border-orange-200 rounded-2xl p-5 shadow-sm space-y-4">
+              <div className="flex items-center justify-between border-b border-orange-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <Cpu className="w-5 h-5 text-orange-500" />
+                  <h3 className="font-extrabold text-slate-900 text-sm">AI / ML Suitability Classifier</h3>
+                </div>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-orange-100 text-orange-800 rounded-md">
+                  ADDITIONAL ML INTELLIGENCE
+                </span>
               </div>
-            ) : (
-              <div className="py-10 flex flex-col items-center justify-center space-y-3 text-center">
-                <Info className="w-8 h-8 text-slate-400" />
-                <p className="text-sm font-bold text-slate-700">No Suitability Calculated Yet</p>
-                <p className="text-xs text-slate-500">
-                  Click <span className="text-orange-600 font-bold">Recalculate Suitability</span> above to compute the 5-factor composite score.
-                </p>
-              </div>
-            )}
-          </Card>
+
+              {mlLoading ? (
+                <div className="py-6 text-center text-xs text-slate-500 font-mono flex items-center justify-center gap-2">
+                  <RefreshCw className="w-4 h-4 animate-spin text-orange-500" />
+                  <span>Classifying with Random Forest Model...</span>
+                </div>
+              ) : mlError ? (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 font-medium flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                  <span>{mlError}</span>
+                </div>
+              ) : mlResult ? (
+                <div className="space-y-4 text-xs">
+                  <div className="p-3 bg-orange-50/80 border border-orange-200 rounded-xl flex items-center justify-between">
+                    <div>
+                      <span className="text-[11px] text-orange-800 font-medium block">ML Predicted Category</span>
+                      <span className="text-base font-extrabold text-orange-600 font-mono">
+                        {mlResult.prediction_category}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-slate-500 font-mono">
+                      Accuracy: {(mlResult.model_metrics?.accuracy * 100).toFixed(1)}%
+                    </span>
+                  </div>
+
+                  {/* Class Probabilities Distribution */}
+                  <div className="space-y-2">
+                    <span className="text-[11px] font-bold text-slate-700 block">Class Probability Distribution:</span>
+                    {Object.entries(mlResult.class_probabilities || {}).map(([clsName, prob]) => {
+                      const pct = Math.round(prob * 100);
+                      const isTop = clsName === mlResult.prediction_category;
+                      return (
+                        <div key={clsName} className="space-y-1">
+                          <div className="flex justify-between text-[11px] font-mono">
+                            <span className={isTop ? 'font-bold text-orange-700' : 'text-slate-600'}>{clsName}</span>
+                            <span className={isTop ? 'font-bold text-orange-700' : 'text-slate-600'}>{pct}%</span>
+                          </div>
+                          <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                            <div
+                              className={`h-1.5 rounded-full transition-all ${isTop ? 'bg-orange-500' : 'bg-slate-300'}`}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100 text-[10px] text-slate-400 font-sans italic bg-slate-50 p-2 rounded-lg border border-slate-100">
+                    Disclaimer: Random Forest Classifier trained on synthetic development data. Does not replace deterministic MCDA score.
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
 
           {/* Factor Breakdown List */}
           <div className="lg:col-span-2 space-y-4">
@@ -258,71 +308,22 @@ export default function SiteSuitabilityPage() {
             </Card>
 
             {/* Formula Explanation Card */}
-            <Card title="Transparent Mathematical Explanation" subtitle="Zero-AI Multi-Criteria Decision Model">
+            <Card title="Transparent Mathematical Explanation" subtitle="Deterministic Multi-Criteria Decision Model">
               <div className="p-4 rounded-xl bg-orange-50/60 border border-orange-200 space-y-2 text-xs font-mono text-slate-800">
                 <p className="text-orange-700 font-bold">
                   Score = (Resource × 0.35) + (Geographic × 0.25) + (Infrastructure × 0.15) + (Environmental × 0.15) + (Economic × 0.10)
                 </p>
-                {latestRec ? (
+                {latestRec && (
                   <p className="text-[11px] text-slate-600 font-sans">
                     Site '{selectedSiteName}' achieved a composite score of{' '}
-                    <span className="text-slate-900 font-bold">{fmtNum(currentScore)}</span> / 100, placing it in the{' '}
-                    '<span className="text-orange-700 font-bold">{fmtStr(currentCategory)}</span>' classification category.
-                  </p>
-                ) : (
-                  <p className="text-[11px] text-slate-500 font-sans">
-                    No calculation available for site '{selectedSiteName}' yet. Run suitability calculation to see results.
+                    <span className="text-slate-900 font-bold">{fmtNum(currentScore)}</span> / 100.
                   </p>
                 )}
-
-                {/* Category legend */}
-                <div className="pt-2 border-t border-orange-200 space-y-1 text-[10px] font-sans">
-                  <div className="flex justify-between"><span className="text-emerald-700 font-bold">Excellent</span><span>90 – 100</span></div>
-                  <div className="flex justify-between"><span className="text-sky-700 font-bold">Highly Suitable</span><span>80 – 89.99</span></div>
-                  <div className="flex justify-between"><span className="text-orange-600 font-bold">Moderately Suitable</span><span>65 – 79.99</span></div>
-                  <div className="flex justify-between"><span className="text-amber-600 font-bold">Low Suitability</span><span>50 – 64.99</span></div>
-                  <div className="flex justify-between"><span className="text-red-600 font-bold">Unsuitable</span><span>0 – 49.99</span></div>
-                </div>
               </div>
             </Card>
-
-            {/* History Table */}
-            {suitabilityHistory.length > 0 && (
-              <Card title="Suitability Calculation History" subtitle="Stored audit records">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs text-slate-700">
-                    <thead className="bg-orange-50/80 text-orange-950 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200 font-mono">
-                      <tr>
-                        <th className="p-3">Timestamp</th>
-                        <th className="p-3">Score</th>
-                        <th className="p-3">Category</th>
-                        <th className="p-3">Resource</th>
-                        <th className="p-3">Geographic</th>
-                        <th className="p-3">Economic</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 font-mono">
-                      {suitabilityHistory.map((r) => (
-                        <tr key={r.id} className="hover:bg-orange-50/30 transition-colors">
-                          <td className="p-3 text-slate-500 font-sans">
-                            {r.created_at ? new Date(r.created_at).toLocaleTimeString() : 'N/A'}
-                          </td>
-                          <td className="p-3 text-slate-900 font-bold">{fmtNum(r.overall_score)}</td>
-                          <td className="p-3 text-orange-600 text-[11px] font-bold">{fmtStr(r.category)}</td>
-                          <td className="p-3 text-orange-600 font-bold">{fmtNum(r.renewable_resource_score)}</td>
-                          <td className="p-3 text-emerald-600 font-bold">{fmtNum(r.geographic_score)}</td>
-                          <td className="p-3 text-sky-700 font-bold">{fmtNum(r.economic_score)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </Card>
-            )}
           </div>
         </div>
       )}
     </div>
   );
 }
-

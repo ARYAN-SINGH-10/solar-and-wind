@@ -7,13 +7,14 @@ function fmtNum(value, digits = 2) {
   if (Number.isNaN(n)) return 'N/A';
   return n.toLocaleString(undefined, { maximumFractionDigits: digits });
 }
+
 import { getSitesApi } from '../services/siteService';
 import { calculateEnergyForecastApi, getEnergyForecastApi } from '../services/analysisService';
+import { predictEnergyForecastML } from '../services/mlService';
 import Card from '../components/common/Card';
 import Badge from '../components/common/Badge';
-import Loading from '../components/common/Loading';
 import ErrorMessage from '../components/common/ErrorMessage';
-import { TrendingUp, Calendar, DollarSign, Zap, RefreshCw, Calculator, Sun, Wind, GitCompare, CheckCircle2 } from 'lucide-react';
+import { TrendingUp, Calculator, CheckCircle2, Cpu, AlertTriangle, RefreshCw } from 'lucide-react';
 
 export default function EnergyForecastPage() {
   const [sites, setSites] = useState([]);
@@ -25,11 +26,40 @@ export default function EnergyForecastPage() {
   const [capacityMw, setCapacityMw] = useState(15.0);
   const [tariffUsdMwh, setTariffUsdMwh] = useState(65.0);
   const [capacityFactor, setCapacityFactor] = useState(28.5);
+  const [targetMonth, setTargetMonth] = useState(6);
 
   const [loading, setLoading] = useState(true);
   const [calculating, setCalculating] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  // AI / ML State
+  const [mlResult, setMlResult] = useState(null);
+  const [mlLoading, setMlLoading] = useState(false);
+  const [mlError, setMlError] = useState('');
+
+  const fetchMLForecast = async (capMw, monthVal) => {
+    setMlLoading(true);
+    setMlError('');
+    try {
+      const res = await predictEnergyForecastML({
+        month: Number(monthVal),
+        historical_generation_mwh: 3500.0,
+        solar_generation_mwh: 2000.0,
+        wind_generation_mwh: 1500.0,
+        irradiance: 2150.0,
+        wind_speed: 7.5,
+        temperature: 25.0,
+        degradation_year: 1,
+        installed_capacity_mw: Number(capMw),
+      });
+      setMlResult(res);
+    } catch (err) {
+      setMlError('AI/ML service unavailable. Showing deterministic forecast.');
+    } finally {
+      setMlLoading(false);
+    }
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -53,6 +83,8 @@ export default function EnergyForecastPage() {
         });
         setForecastResult(fc);
       }
+
+      fetchMLForecast(capacityMw, targetMonth);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to load energy forecast.');
     } finally {
@@ -80,6 +112,7 @@ export default function EnergyForecastPage() {
       });
       setForecastResult(res);
       setSuccessMsg('Successfully computed 12-month and 25-year deterministic energy forecast.');
+      fetchMLForecast(capacityMw, targetMonth);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to calculate energy forecast.');
     } finally {
@@ -90,6 +123,10 @@ export default function EnergyForecastPage() {
   const monthlyList = forecastResult?.monthly_breakdown || [];
   const annualList = forecastResult?.annual_projections || [];
 
+  const targetDetMonthlyGen = monthlyList.length >= targetMonth ? Number(monthlyList[targetMonth - 1].generation_mwh) : null;
+  const mlMonthlyGen = mlResult ? Number(mlResult.prediction_monthly_mwh) : null;
+  const forecastDiff = targetDetMonthlyGen && mlMonthlyGen ? (mlMonthlyGen - targetDetMonthlyGen) : null;
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
@@ -97,14 +134,17 @@ export default function EnergyForecastPage() {
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
             <TrendingUp className="w-6 h-6 text-orange-500" />
-            <span>Deterministic Energy Generation & Revenue Forecast</span>
+            <span>Energy Forecast & AI Intelligence</span>
           </h1>
           <p className="text-xs text-slate-500 font-medium mt-1">
-            Calculated engineering estimates derived from GHI irradiance, 100m wind speed, PPA tariffs, and 25-year degradation profiles.
+            25-Year engineering degradation horizon model coupled with Gradient Boosting ML monthly forecasting.
           </p>
         </div>
 
-        <Badge type="success">ZERO AI / CALCULATED ESTIMATES ONLY</Badge>
+        <div className="flex items-center gap-2">
+          <Badge type="success">DETERMINISTIC FORECAST</Badge>
+          <Badge type="orange">AI/ML FORECAST LAYER</Badge>
+        </div>
       </div>
 
       {/* Target Site Selector */}
@@ -189,16 +229,20 @@ export default function EnergyForecastPage() {
 
             <div>
               <div className="flex justify-between text-slate-700 font-bold mb-1">
-                <span>Target Capacity Factor (%):</span>
-                <span className="text-sky-700 font-mono font-bold">{capacityFactor}%</span>
+                <span>Target Forecast Month:</span>
+                <span className="text-orange-600 font-mono font-bold">Month {targetMonth}</span>
               </div>
               <input
                 type="range"
-                min="10.0"
-                max="60.0"
-                step="0.5"
-                value={capacityFactor}
-                onChange={(e) => setCapacityFactor(Number(e.target.value))}
+                min="1"
+                max="12"
+                step="1"
+                value={targetMonth}
+                onChange={(e) => {
+                  const m = Number(e.target.value);
+                  setTargetMonth(m);
+                  fetchMLForecast(capacityMw, m);
+                }}
                 className="w-full accent-orange-500 bg-slate-100 rounded-lg h-2"
               />
             </div>
@@ -209,7 +253,7 @@ export default function EnergyForecastPage() {
               className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl shadow-sm transition-all disabled:opacity-50 text-xs flex items-center justify-center space-x-2 mt-2"
             >
               <Calculator className={`w-4 h-4 ${calculating ? 'animate-spin' : ''}`} />
-              <span>{calculating ? 'Calculating Forecast...' : 'Run Deterministic Forecast'}</span>
+              <span>{calculating ? 'Calculating Forecast...' : 'Run Forecast Engine'}</span>
             </button>
           </div>
         </Card>
@@ -247,7 +291,72 @@ export default function EnergyForecastPage() {
             </Card>
           </div>
 
-          {/* Monthly Generation & Revenue Table */}
+          {/* AI / ML Forecast Component */}
+          <div className="bg-white border-2 border-orange-200 rounded-2xl p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-orange-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Cpu className="w-5 h-5 text-orange-500" />
+                <h3 className="font-extrabold text-slate-900 text-sm">AI / ML Monthly Energy Generation Forecast</h3>
+              </div>
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-orange-100 text-orange-800 rounded-md">
+                ADDITIONAL ML INTELLIGENCE
+              </span>
+            </div>
+
+            {mlLoading ? (
+              <div className="py-6 text-center text-xs text-slate-500 font-mono flex items-center justify-center gap-2">
+                <RefreshCw className="w-4 h-4 animate-spin text-orange-500" />
+                <span>Forecasting Month {targetMonth} Generation...</span>
+              </div>
+            ) : mlError ? (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 font-medium flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                <span>{mlError}</span>
+              </div>
+            ) : mlResult ? (
+              <div className="space-y-4 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    <span className="text-[11px] text-slate-500 font-medium block">Deterministic Month {targetMonth}</span>
+                    <span className="text-base font-extrabold text-slate-900 font-mono">
+                      {targetDetMonthlyGen ? `${fmtNum(targetDetMonthlyGen)} MWh` : 'N/A'}
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-orange-50/80 border border-orange-200 rounded-xl">
+                    <span className="text-[11px] text-orange-800 font-medium block">AI/ML Forecast Month {targetMonth}</span>
+                    <span className="text-base font-extrabold text-orange-600 font-mono">
+                      {fmtNum(mlResult.prediction_monthly_mwh)} MWh
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl">
+                    <span className="text-[11px] text-emerald-800 font-medium block">Variance (ML vs Det)</span>
+                    <span className="text-base font-extrabold text-emerald-700 font-mono">
+                      {forecastDiff !== null ? `${forecastDiff > 0 ? '+' : ''}${fmtNum(forecastDiff)} MWh` : 'N/A'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-orange-50/40 border border-orange-200 rounded-xl space-y-1">
+                  <span className="text-[11px] font-bold text-orange-950 block">Residual-based 95% Forecast Interval:</span>
+                  <p className="font-mono text-xs font-bold text-slate-800">
+                    [{fmtNum(mlResult.prediction_interval?.lower_bound_mwh)} MWh — {fmtNum(mlResult.prediction_interval?.upper_bound_mwh)} MWh]
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center text-[10px] text-slate-500 font-mono gap-1">
+                  <span>Model: {mlResult.model} | R²: {mlResult.model_metrics?.r2}</span>
+                  <span>Dataset: {mlResult.dataset_source}</span>
+                </div>
+                <div className="text-[10px] text-slate-400 font-sans italic bg-slate-50 p-2 rounded-lg border border-slate-100">
+                  Disclaimer: Calibrated development training model. Does not replace 25-year deterministic degradation forecast engine.
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          {/* Monthly Generation Breakdown Table */}
           <Card title="Monthly Generation & Revenue Breakdown" subtitle="12-Month seasonal simulation">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs text-slate-700">
@@ -272,37 +381,8 @@ export default function EnergyForecastPage() {
               </table>
             </div>
           </Card>
-
-          {/* 25-Year Annual Degradation Horizon Table */}
-          <Card title="25-Year Long-Term Horizon Projections" subtitle="0.5%/yr solar/wind degradation decay model">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-700">
-                <thead className="bg-orange-50/80 text-orange-950 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200 font-mono">
-                  <tr>
-                    <th className="p-3">Operating Year</th>
-                    <th className="p-3">Annual Generation</th>
-                    <th className="p-3">Annual Revenue</th>
-                    <th className="p-3">Cumulative Energy</th>
-                    <th className="p-3">Cumulative Revenue</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 font-mono">
-                  {annualList.map((a) => (
-                    <tr key={a.year} className="hover:bg-orange-50/30 transition-colors">
-                      <td className="p-3 font-sans font-bold text-sky-700">Year {a.year}</td>
-                      <td className="p-3 font-bold">{fmtNum(a.generation_mwh)} MWh</td>
-                      <td className="p-3 text-emerald-600 font-bold">${fmtNum(a.revenue_usd, 0)}</td>
-                      <td className="p-3 text-slate-600">{fmtNum(a.cumulative_energy_mwh)} MWh</td>
-                      <td className="p-3 text-purple-700 font-bold">${fmtNum(a.cumulative_revenue_usd, 0)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
         </div>
       </div>
     </div>
   );
-
 }

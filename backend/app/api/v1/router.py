@@ -14,6 +14,7 @@ from app.api.v1.endpoints import (
     notifications,
     comparison,
     analytics,
+    ml,
 )
 
 api_router = APIRouter()
@@ -32,4 +33,5 @@ api_router.include_router(reports.router, prefix="", tags=["Reports & Exports"])
 api_router.include_router(notifications.router, prefix="", tags=["Notifications"])
 api_router.include_router(comparison.router, prefix="", tags=["Site Comparison & Benchmarking"])
 api_router.include_router(analytics.router, prefix="/analytics", tags=["GIS & Analytics Dashboard Engine"])
+api_router.include_router(ml.router, prefix="/ml", tags=["AI/ML Intelligence Layer"])
 

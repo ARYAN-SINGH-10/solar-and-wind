@@ -7,13 +7,14 @@ function fmtNum(value, digits = 2) {
   if (Number.isNaN(n)) return 'N/A';
   return n.toLocaleString(undefined, { maximumFractionDigits: digits });
 }
+
 import { getSitesApi } from '../services/siteService';
 import { runSolarAnalysisApi, getSolarAssessmentsApi } from '../services/analysisService';
+import { predictSolarML } from '../services/mlService';
 import Card from '../components/common/Card';
 import Badge from '../components/common/Badge';
-import Loading from '../components/common/Loading';
 import ErrorMessage from '../components/common/ErrorMessage';
-import { Sun, Sliders, Cpu, Zap, CheckCircle2, RefreshCw, Calculator, History } from 'lucide-react';
+import { Sun, Calculator, CheckCircle2, Cpu, AlertTriangle, RefreshCw, Zap } from 'lucide-react';
 
 export default function SolarAnalysisPage() {
   const [sites, setSites] = useState([]);
@@ -32,6 +33,33 @@ export default function SolarAnalysisPage() {
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+  // AI / ML State
+  const [mlResult, setMlResult] = useState(null);
+  const [mlLoading, setMlLoading] = useState(false);
+  const [mlError, setMlError] = useState('');
+
+  const fetchMLPrediction = async (site, capMw) => {
+    setMlLoading(true);
+    setMlError('');
+    try {
+      const res = await predictSolarML({
+        ghi: 2150.0,
+        dni: 2300.0,
+        temperature: 22.5,
+        elevation: site ? Number(site.elevation || 650.0) : 650.0,
+        slope: site ? Number(site.slope || 2.5) : 2.5,
+        latitude: site ? Number(site.latitude || 23.25) : 23.25,
+        longitude: site ? Number(site.longitude || 77.41) : 77.41,
+        installed_capacity_mw: Number(capMw),
+      });
+      setMlResult(res);
+    } catch (err) {
+      setMlError('AI/ML service unavailable. Showing deterministic analysis.');
+    } finally {
+      setMlLoading(false);
+    }
+  };
+
   const loadData = async () => {
     setLoading(true);
     setError('');
@@ -41,15 +69,22 @@ export default function SolarAnalysisPage() {
       setSites(sItems);
 
       let targetSiteId = selectedSiteId;
+      let currentSite = null;
+
       if (!targetSiteId && sItems.length > 0) {
         targetSiteId = sItems[0].id;
         setSelectedSiteId(targetSiteId);
+        currentSite = sItems[0];
+      } else {
+        currentSite = sItems.find((s) => String(s.id) === String(targetSiteId));
       }
 
       if (targetSiteId) {
         const history = await getSolarAssessmentsApi(targetSiteId);
         setAssessments(history);
       }
+
+      fetchMLPrediction(currentSite, capacityMw);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to load solar assessments.');
     } finally {
@@ -76,6 +111,8 @@ export default function SolarAnalysisPage() {
         shading_loss_pct: Number(shadingLoss),
       });
       setSuccessMsg('Successfully executed deterministic solar analysis and stored assessment.');
+      const currentSite = sites.find((s) => String(s.id) === String(selectedSiteId));
+      fetchMLPrediction(currentSite, capacityMw);
       loadData();
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to run solar calculation engine.');
@@ -85,6 +122,9 @@ export default function SolarAnalysisPage() {
   };
 
   const latestAssessment = assessments.length > 0 ? assessments[0] : null;
+  const detAnnualGen = latestAssessment ? Number(latestAssessment.expected_energy_output) : null;
+  const mlAnnualGen = mlResult ? Number(mlResult.prediction_annual_mwh) : null;
+  const genDiff = detAnnualGen && mlAnnualGen ? (mlAnnualGen - detAnnualGen) : null;
 
   return (
     <div className="space-y-6">
@@ -93,14 +133,17 @@ export default function SolarAnalysisPage() {
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
             <Sun className="w-6 h-6 text-orange-500" />
-            <span>Deterministic Solar PV Analysis Engine</span>
+            <span>Solar Energy Analysis & AI Intelligence</span>
           </h1>
           <p className="text-xs text-slate-500 font-medium mt-1">
-            Physical photovoltaic performance modeling using GHI irradiance, system degradation, and tilt optimization.
+            Physical photovoltaic performance modeling integrated with Gradient Boosting Machine Learning predictions.
           </p>
         </div>
 
-        <Badge type="warning">ZERO AI / DETERMINISTIC ENGINE</Badge>
+        <div className="flex items-center gap-2">
+          <Badge type="warning">DETERMINISTIC PHYSICS</Badge>
+          <Badge type="orange">AI/ML PREDICTION LAYER</Badge>
+        </div>
       </div>
 
       {/* Target Site Selector */}
@@ -222,7 +265,7 @@ export default function SolarAnalysisPage() {
           </div>
         </Card>
 
-        {/* Calculated Results & Formula Explanation */}
+        {/* Calculated Results & AI Intelligence Panel */}
         <div className="lg:col-span-2 space-y-6">
           {/* Key Output Metric Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -241,7 +284,7 @@ export default function SolarAnalysisPage() {
             </Card>
 
             <Card>
-              <span className="text-xs text-slate-500 font-medium block">Annual Generation</span>
+              <span className="text-xs text-slate-500 font-medium block">Deterministic Gen</span>
               <span className="text-xl font-extrabold text-emerald-600 font-mono">
                 {latestAssessment ? `${fmtNum(latestAssessment.expected_energy_output)} MWh` : 'N/A'}
               </span>
@@ -255,6 +298,77 @@ export default function SolarAnalysisPage() {
             </Card>
           </div>
 
+          {/* AI / ML Solar Prediction Component */}
+          <div className="bg-white border-2 border-orange-200 rounded-2xl p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-orange-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Cpu className="w-5 h-5 text-orange-500" />
+                <h3 className="font-extrabold text-slate-900 text-sm">AI / ML Solar Generation Prediction</h3>
+              </div>
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-orange-100 text-orange-800 rounded-md">
+                ADDITIONAL ML INTELLIGENCE
+              </span>
+            </div>
+
+            {mlLoading ? (
+              <div className="py-6 text-center text-xs text-slate-500 font-mono flex items-center justify-center gap-2">
+                <RefreshCw className="w-4 h-4 animate-spin text-orange-500" />
+                <span>Computing Gradient Boosting Regressor Prediction...</span>
+              </div>
+            ) : mlError ? (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 font-medium flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                <span>{mlError}</span>
+              </div>
+            ) : mlResult ? (
+              <div className="space-y-4 text-xs">
+                {/* Comparison Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    <span className="text-[11px] text-slate-500 font-medium block">Deterministic Physics</span>
+                    <span className="text-base font-extrabold text-slate-900 font-mono">
+                      {detAnnualGen ? `${fmtNum(detAnnualGen)} MWh` : 'N/A'}
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-orange-50/80 border border-orange-200 rounded-xl">
+                    <span className="text-[11px] text-orange-800 font-medium block">AI/ML Prediction</span>
+                    <span className="text-base font-extrabold text-orange-600 font-mono">
+                      {fmtNum(mlResult.prediction_annual_mwh)} MWh
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl">
+                    <span className="text-[11px] text-emerald-800 font-medium block">Variance (ML vs Det)</span>
+                    <span className="text-base font-extrabold text-emerald-700 font-mono">
+                      {genDiff !== null ? `${genDiff > 0 ? '+' : ''}${fmtNum(genDiff)} MWh` : 'N/A'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Prediction Interval Box */}
+                <div className="p-3 bg-orange-50/40 border border-orange-200 rounded-xl space-y-1">
+                  <span className="text-[11px] font-bold text-orange-950 block">Residual-based 95% Prediction Interval:</span>
+                  <p className="font-mono text-xs font-bold text-slate-800">
+                    [{fmtNum(mlResult.prediction_interval?.lower_bound_mwh)} MWh — {fmtNum(mlResult.prediction_interval?.upper_bound_mwh)} MWh]
+                  </p>
+                  <p className="text-[10px] text-slate-500 font-sans">
+                    Statistical bounds based on ±1.96 × Model Test RMSE ({mlResult.model_metrics?.rmse} MWh/yr).
+                  </p>
+                </div>
+
+                {/* Metadata & Disclaimers */}
+                <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center text-[10px] text-slate-500 font-mono gap-1">
+                  <span>Model: {mlResult.model} | R²: {mlResult.model_metrics?.r2}</span>
+                  <span>Dataset: {mlResult.dataset_source}</span>
+                </div>
+                <div className="text-[10px] text-slate-400 font-sans italic bg-slate-50 p-2 rounded-lg border border-slate-100">
+                  Disclaimer: Calibrated development training model. Does not replace physical physics engine calculations.
+                </div>
+              </div>
+            ) : null}
+          </div>
+
           {/* Formula Transparency Box */}
           <Card title="Transparent Engineering Formula Structure" subtitle="100% Reproducible Physical Physics Equation">
             <div className="p-4 rounded-xl bg-orange-50/60 border border-orange-200 space-y-2 text-xs font-mono text-slate-800">
@@ -264,38 +378,6 @@ export default function SolarAnalysisPage() {
               <p className="text-[11px] text-slate-600 font-sans">
                 Where: Peak Sun Hours = GHI / 365.0 | Net PR = Baseline PR × (1 - System Loss) × (1 - Shading Loss)
               </p>
-              <div className="pt-2 flex items-center justify-between text-[10px] text-slate-500 border-t border-orange-200 font-sans">
-                <span>Data Provenance: NASA POWER Satellite Irradiance GHI</span>
-                <span>Timestamp: {latestAssessment ? new Date(latestAssessment.created_at).toLocaleString() : 'N/A'}</span>
-              </div>
-            </div>
-          </Card>
-
-          {/* Assessment History Table */}
-          <Card title="Stored Assessment History" subtitle="Audit records of stored inputs and calculations">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-700">
-                <thead className="bg-orange-50/80 text-orange-950 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200 font-mono">
-                  <tr>
-                    <th className="p-3">Timestamp</th>
-                    <th className="p-3">GHI Irradiance</th>
-                    <th className="p-3">Peak Sun Hours</th>
-                    <th className="p-3">Expected Output</th>
-                    <th className="p-3">Capacity Factor</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 font-mono">
-                  {assessments.map((a) => (
-                    <tr key={a.id} className="hover:bg-orange-50/30 transition-colors">
-                      <td className="p-3 text-slate-500 font-sans">{new Date(a.created_at).toLocaleTimeString()}</td>
-                      <td className="p-3 text-orange-600 font-bold">{a.annual_irradiance} kWh/m²</td>
-                      <td className="p-3">{a.peak_sun_hours} hrs/day</td>
-                      <td className="p-3 text-emerald-600 font-bold">{fmtNum(a.expected_energy_output)} MWh</td>
-                      <td className="p-3 text-sky-700 font-bold">{a.capacity_factor}%</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
           </Card>
         </div>
@@ -303,4 +385,3 @@ export default function SolarAnalysisPage() {
     </div>
   );
 }
-

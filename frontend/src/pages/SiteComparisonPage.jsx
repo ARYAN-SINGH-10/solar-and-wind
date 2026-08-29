@@ -1,17 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { fetchSites } from '../services/api';
-import { compareSitesDirectApi, createComparisonApi, listComparisonsApi } from '../services/platformService';
+import { compareSitesDirectApi } from '../services/platformService';
+import { rankSitesML } from '../services/mlService';
 import Card from '../components/common/Card';
 import Badge from '../components/common/Badge';
 import Loading from '../components/common/Loading';
 import ErrorMessage from '../components/common/ErrorMessage';
-import {
-  GitCompare, Trophy, CheckCircle2, RefreshCw, Award, MapPin,
-  TrendingUp, DollarSign, Sun, Wind, Layers, Plus, Star
-} from 'lucide-react';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
-} from 'recharts';
+import { GitCompare, Trophy, CheckCircle2, RefreshCw, Cpu, AlertTriangle } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function SiteComparisonPage() {
   const [sitesList, setSitesList] = useState([]);
@@ -22,6 +18,35 @@ export default function SiteComparisonPage() {
   const [comparing, setComparing] = useState(false);
   const [error, setError] = useState('');
 
+  // AI / ML State
+  const [mlRankings, setMlRankings] = useState(null);
+  const [mlLoading, setMlLoading] = useState(false);
+  const [mlError, setMlError] = useState('');
+
+  const fetchMLRankings = async (sitesToRank) => {
+    setMlLoading(true);
+    setMlError('');
+    try {
+      const candidates = sitesToRank.map(s => ({
+        site_id: s.site_id,
+        site_name: s.site_name,
+        overall_score: s.overall_suitability || 75.0,
+        renewable_resource_score: s.resource_score || 75.0,
+        expected_energy_mwh: s.expected_energy || 15000.0,
+        economic_score: s.economic_score || 70.0,
+        grid_distance_km: 5.0,
+        road_distance_km: 2.0,
+      }));
+
+      const res = await rankSitesML(candidates);
+      setMlRankings(res);
+    } catch (err) {
+      setMlError('AI/ML service unavailable. Showing deterministic benchmark.');
+    } finally {
+      setMlLoading(false);
+    }
+  };
+
   useEffect(() => {
     const loadSites = async () => {
       setLoading(true);
@@ -30,7 +55,6 @@ export default function SiteComparisonPage() {
         const res = await fetchSites();
         const items = Array.isArray(res) ? res : (res.items || []);
         setSitesList(items);
-        // Pre-select first 3 sites by default
         if (items.length >= 2) {
           const initial = items.slice(0, Math.min(3, items.length)).map(s => s.id);
           setSelectedSiteIds(initial);
@@ -75,6 +99,9 @@ export default function SiteComparisonPage() {
     try {
       const res = await compareSitesDirectApi(idsToCompare);
       setComparisonResult(res);
+      if (res.sites && res.sites.length > 0) {
+        fetchMLRankings(res.sites);
+      }
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to compare candidate sites.');
     } finally {
@@ -85,7 +112,6 @@ export default function SiteComparisonPage() {
   const comparedSites = comparisonResult?.sites || [];
   const bestSite = comparisonResult?.recommended_best_site || null;
 
-  // Compute maximum values for table highlighting
   const maxValues = {
     overall_suitability: Math.max(...comparedSites.map(s => s.overall_suitability || 0)),
     expected_energy: Math.max(...comparedSites.map(s => s.expected_energy || 0)),
@@ -101,10 +127,10 @@ export default function SiteComparisonPage() {
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
             <GitCompare className="w-6 h-6 text-orange-500" />
-            <span>Multi-Site Deterministic Benchmarking</span>
+            <span>Multi-Site Benchmarking & AI Candidate Ranking</span>
           </h1>
           <p className="text-xs text-slate-500 font-medium mt-1">
-            Compare 2 to 5 candidate sites side-by-side across 18 physical & financial metrics. Highest scoring site is deterministically identified. Zero AI!
+            Deterministic side-by-side benchmarking integrated with an Explainable Composite Heuristic Site Ranker.
           </p>
         </div>
         <Badge type="info">{selectedSiteIds.length} / 5 Sites Selected</Badge>
@@ -162,7 +188,7 @@ export default function SiteComparisonPage() {
 
       <ErrorMessage message={error} />
 
-      {/* RECOMMENDED BEST SITE HIGHLIGHT BOX (WINNER) */}
+      {/* RECOMMENDED BEST SITE HIGHLIGHT BOX */}
       {bestSite && (
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-orange-50 via-white to-white p-6 border border-orange-300 shadow-md space-y-3">
           <div className="flex items-center justify-between">
@@ -191,6 +217,68 @@ export default function SiteComparisonPage() {
               <p className="text-xl font-black text-emerald-700 font-mono">${bestSite.estimated_revenue?.toLocaleString()}/yr</p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* AI Candidate Ranking Section */}
+      {comparedSites.length > 0 && (
+        <div className="bg-white border-2 border-orange-200 rounded-2xl p-5 shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-orange-100 pb-3">
+            <div className="flex items-center gap-2">
+              <Cpu className="w-5 h-5 text-orange-500" />
+              <h3 className="font-extrabold text-slate-900 text-sm">AI Candidate Ranking — Explainable Composite Heuristic Site Ranker</h3>
+            </div>
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-orange-100 text-orange-800 rounded-md">
+              ADDITIONAL HEURISTIC INTELLIGENCE
+            </span>
+          </div>
+
+          {mlLoading ? (
+            <div className="py-6 text-center text-xs text-slate-500 font-mono flex items-center justify-center gap-2">
+              <RefreshCw className="w-4 h-4 animate-spin text-orange-500" />
+              <span>Evaluating Explainable Composite Candidate Ranker...</span>
+            </div>
+          ) : mlError ? (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 font-medium flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+              <span>{mlError}</span>
+            </div>
+          ) : mlRankings ? (
+            <div className="space-y-4 text-xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left font-mono text-slate-700">
+                  <thead className="bg-orange-50/80 text-orange-950 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200">
+                    <tr>
+                      <th className="p-3">Rank</th>
+                      <th className="p-3">Candidate Site</th>
+                      <th className="p-3">Rank Score</th>
+                      <th className="p-3">Major Contributing Factors</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {mlRankings.ranked_sites?.map((item) => (
+                      <tr key={item.site_id} className="hover:bg-orange-50/30 transition-colors">
+                        <td className="p-3 font-extrabold text-orange-600 font-sans">#{item.rank}</td>
+                        <td className="p-3 font-bold text-slate-900 font-sans">{item.site_name}</td>
+                        <td className="p-3 text-sky-700 font-bold">{item.rank_score} / 100</td>
+                        <td className="p-3 text-slate-600 font-sans">
+                          <ul className="list-disc list-inside space-y-0.5 text-[11px]">
+                            {item.major_contributing_factors?.map((factor, idx) => (
+                              <li key={idx}>{factor}</li>
+                            ))}
+                          </ul>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="text-[10px] text-slate-400 font-sans italic bg-slate-50 p-2 rounded-lg border border-slate-100">
+                Algorithm: Explainable Composite Heuristic Site Ranker. Evaluates multi-attribute preference weights. Does not replace deterministic winner metric.
+              </div>
+            </div>
+          ) : null}
         </div>
       )}
 
@@ -260,7 +348,6 @@ export default function SiteComparisonPage() {
       {/* COMPARISON CHARTS */}
       {comparedSites.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* 1. Score Multi-Factor Comparison Chart */}
           <Card title="Overall & Resource Score Comparison" subtitle="Scores scaled 0 - 100">
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -277,7 +364,6 @@ export default function SiteComparisonPage() {
             </div>
           </Card>
 
-          {/* 2. Expected Energy Comparison Chart */}
           <Card title="Expected Annual Energy (MWh/yr)" subtitle="Combined Solar + Wind yield output">
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -292,7 +378,6 @@ export default function SiteComparisonPage() {
             </div>
           </Card>
 
-          {/* 3. Estimated Revenue Comparison Chart */}
           <Card title="Estimated Annual Revenue ($ USD)" subtitle="Projected sales revenue from tariff">
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">

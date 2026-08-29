@@ -7,12 +7,15 @@ function fmtNum(value, digits = 2) {
   if (Number.isNaN(n)) return 'N/A';
   return n.toLocaleString(undefined, { maximumFractionDigits: digits });
 }
+
 import { getSitesApi } from '../services/siteService';
 import { runWindAnalysisApi, getWindAssessmentsApi } from '../services/analysisService';
+import { predictWindML } from '../services/mlService';
 import Card from '../components/common/Card';
 import Loading from '../components/common/Loading';
 import ErrorMessage from '../components/common/ErrorMessage';
-import { Wind, MapPin, Calculator, CheckCircle2, ShieldAlert } from 'lucide-react';
+import Badge from '../components/common/Badge';
+import { Wind, MapPin, Calculator, CheckCircle2, Cpu, AlertTriangle, RefreshCw } from 'lucide-react';
 
 export default function WindAnalysisPage() {
   const [sites, setSites] = useState([]);
@@ -31,6 +34,36 @@ export default function WindAnalysisPage() {
   const [operatingHours, setOperatingHours] = useState(8760.0);
   const [turbineRating, setTurbineRating] = useState(3.0);
 
+  // AI / ML State
+  const [mlResult, setMlResult] = useState(null);
+  const [mlLoading, setMlLoading] = useState(false);
+  const [mlError, setMlError] = useState('');
+
+  const fetchMLWindPrediction = async (site, numTurb, ratingMw, rDiam) => {
+    setMlLoading(true);
+    setMlError('');
+    try {
+      const rArea = Math.PI * Math.pow(Number(rDiam) / 2.0, 2);
+      const res = await predictWindML({
+        mean_wind_speed: 7.5,
+        wind_power_density: 250.0,
+        air_density: Number(airDensity),
+        elevation: site ? Number(site.elevation || 650.0) : 650.0,
+        latitude: site ? Number(site.latitude || 23.25) : 23.25,
+        longitude: site ? Number(site.longitude || 77.41) : 77.41,
+        rotor_area: rArea,
+        turbine_rating_mw: Number(ratingMw),
+        num_turbines: Number(numTurb),
+        capacity_factor_pct: 32.5,
+      });
+      setMlResult(res);
+    } catch (err) {
+      setMlError('AI/ML service unavailable. Showing deterministic analysis.');
+    } finally {
+      setMlLoading(false);
+    }
+  };
+
   useEffect(() => {
     async function loadData() {
       setLoading(true);
@@ -39,7 +72,9 @@ export default function WindAnalysisPage() {
         const siteList = sRes.items || sRes;
         setSites(siteList);
         if (siteList.length > 0) {
-          setSelectedSiteId(siteList[0].id);
+          const firstSite = siteList[0];
+          setSelectedSiteId(firstSite.id);
+          fetchMLWindPrediction(firstSite, numTurbines, turbineRating, rotorDiameter);
         }
       } catch (err) {
         setError('Failed to load candidate sites.');
@@ -56,6 +91,8 @@ export default function WindAnalysisPage() {
       try {
         const data = await getWindAssessmentsApi(selectedSiteId);
         setAssessments(data);
+        const currentSite = sites.find((s) => String(s.id) === String(selectedSiteId));
+        fetchMLWindPrediction(currentSite, numTurbines, turbineRating, rotorDiameter);
       } catch (err) {
         setError(err.response?.data?.detail || 'Failed to load wind assessments.');
       }
@@ -83,6 +120,8 @@ export default function WindAnalysisPage() {
       setSuccessMsg('Successfully executed deterministic fluid dynamics wind analysis and stored assessment.');
       const updated = await getWindAssessmentsApi(selectedSiteId);
       setAssessments(updated);
+      const currentSite = sites.find((s) => String(s.id) === String(selectedSiteId));
+      fetchMLWindPrediction(currentSite, numTurbines, turbineRating, rotorDiameter);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to run wind calculation engine.');
     } finally {
@@ -93,6 +132,9 @@ export default function WindAnalysisPage() {
   if (loading) return <Loading message="Loading wind potential site parameters..." />;
 
   const latestAssessment = assessments.length > 0 ? assessments[0] : null;
+  const detWindGen = latestAssessment ? Number(latestAssessment.expected_annual_energy_production) : null;
+  const mlWindGen = mlResult ? Number(mlResult.prediction_annual_mwh) : null;
+  const windDiff = detWindGen && mlWindGen ? (mlWindGen - detWindGen) : null;
 
   return (
     <div className="space-y-6">
@@ -103,11 +145,16 @@ export default function WindAnalysisPage() {
             <Wind className="w-6 h-6 text-orange-500" />
           </div>
           <div>
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Deterministic Wind Analysis Engine</h1>
+            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Wind Resource Analysis & AI Intelligence</h1>
             <p className="text-xs text-slate-500 font-medium mt-0.5">
-              Fluid mechanics aerodynamic wind power modeling based on hub-height velocity and atmospheric air density profiles.
+              Fluid mechanics aerodynamic wind power modeling coupled with Random Forest Machine Learning resource prediction.
             </p>
           </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Badge type="warning">DETERMINISTIC FLUID DYNAMICS</Badge>
+          <Badge type="orange">AI/ML PREDICTION LAYER</Badge>
         </div>
       </div>
 
@@ -214,7 +261,7 @@ export default function WindAnalysisPage() {
           </form>
         </Card>
 
-        {/* Calculated Results & Fluid Dynamics Formula Explanation */}
+        {/* Calculated Results & AI Intelligence */}
         <div className="lg:col-span-2 space-y-6">
           {/* Key Output Metric Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -240,9 +287,9 @@ export default function WindAnalysisPage() {
             </Card>
 
             <Card>
-              <span className="text-xs text-slate-500 font-medium block">Annual Gen (AEP)</span>
+              <span className="text-xs text-slate-500 font-medium block">Deterministic AEP</span>
               <span className="text-lg font-extrabold text-emerald-600 font-mono">
-                {latestAssessment ? `${latestAssessment.expected_annual_energy_production.toLocaleString()} MWh` : 'N/A'}
+                {latestAssessment ? `${fmtNum(latestAssessment.expected_annual_energy_production)} MWh` : 'N/A'}
               </span>
             </Card>
 
@@ -254,6 +301,77 @@ export default function WindAnalysisPage() {
             </Card>
           </div>
 
+          {/* AI / ML Wind Prediction Component */}
+          <div className="bg-white border-2 border-orange-200 rounded-2xl p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-orange-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Cpu className="w-5 h-5 text-orange-500" />
+                <h3 className="font-extrabold text-slate-900 text-sm">AI / ML Wind Generation Prediction</h3>
+              </div>
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-orange-100 text-orange-800 rounded-md">
+                ADDITIONAL ML INTELLIGENCE
+              </span>
+            </div>
+
+            {mlLoading ? (
+              <div className="py-6 text-center text-xs text-slate-500 font-mono flex items-center justify-center gap-2">
+                <RefreshCw className="w-4 h-4 animate-spin text-orange-500" />
+                <span>Computing Random Forest Regressor Prediction...</span>
+              </div>
+            ) : mlError ? (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 font-medium flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                <span>{mlError}</span>
+              </div>
+            ) : mlResult ? (
+              <div className="space-y-4 text-xs">
+                {/* Comparison Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    <span className="text-[11px] text-slate-500 font-medium block">Deterministic Physics AEP</span>
+                    <span className="text-base font-extrabold text-slate-900 font-mono">
+                      {detWindGen ? `${fmtNum(detWindGen)} MWh` : 'N/A'}
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-orange-50/80 border border-orange-200 rounded-xl">
+                    <span className="text-[11px] text-orange-800 font-medium block">AI/ML Predicted AEP</span>
+                    <span className="text-base font-extrabold text-orange-600 font-mono">
+                      {fmtNum(mlResult.prediction_annual_mwh)} MWh
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl">
+                    <span className="text-[11px] text-emerald-800 font-medium block">Variance (ML vs Det)</span>
+                    <span className="text-base font-extrabold text-emerald-700 font-mono">
+                      {windDiff !== null ? `${windDiff > 0 ? '+' : ''}${fmtNum(windDiff)} MWh` : 'N/A'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Prediction Interval Box */}
+                <div className="p-3 bg-orange-50/40 border border-orange-200 rounded-xl space-y-1">
+                  <span className="text-[11px] font-bold text-orange-950 block">Residual-based 95% Prediction Interval:</span>
+                  <p className="font-mono text-xs font-bold text-slate-800">
+                    [{fmtNum(mlResult.prediction_interval?.lower_bound_mwh)} MWh — {fmtNum(mlResult.prediction_interval?.upper_bound_mwh)} MWh]
+                  </p>
+                  <p className="text-[10px] text-slate-500 font-sans">
+                    Statistical bounds based on ±1.96 × Model Test RMSE ({mlResult.model_metrics?.rmse} MWh/yr).
+                  </p>
+                </div>
+
+                {/* Metadata & Disclaimers */}
+                <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center text-[10px] text-slate-500 font-mono gap-1">
+                  <span>Model: {mlResult.model} | R²: {mlResult.model_metrics?.r2}</span>
+                  <span>Dataset: {mlResult.dataset_source}</span>
+                </div>
+                <div className="text-[10px] text-slate-400 font-sans italic bg-slate-50 p-2 rounded-lg border border-slate-100">
+                  Disclaimer: Calibrated development training model. Does not replace physical fluid dynamics calculation engine.
+                </div>
+              </div>
+            ) : null}
+          </div>
+
           {/* Formula Transparency Box */}
           <Card title="Transparent Fluid Dynamics Formula Structure" subtitle="100% Reproducible Wind Energy Equation">
             <div className="p-4 rounded-xl bg-orange-50/60 border border-orange-200 space-y-2 text-xs font-mono text-slate-800">
@@ -263,43 +381,6 @@ export default function WindAnalysisPage() {
               <p className="text-[11px] text-slate-600 font-sans">
                 P_effective = min(P_aerodynamic, P_nameplate) | Capacity Factor (%) = (P_effective / P_nameplate) × 100
               </p>
-              <p className="text-[11px] text-slate-600 font-sans">
-                Annual Energy Production (MWh) = P_effective × Operating Hours / 1,000,000
-              </p>
-              <div className="pt-2 flex items-center justify-between text-[10px] text-slate-500 border-t border-orange-200 font-sans">
-                <span>Data Provenance: Open-Meteo Weather Grid 100m Wind Telemetry</span>
-                <span>Timestamp: {latestAssessment ? new Date(latestAssessment.created_at).toLocaleString() : 'N/A'}</span>
-              </div>
-            </div>
-          </Card>
-
-          {/* Assessment History Table */}
-          <Card title="Stored Assessment History" subtitle="Audit records of stored inputs and calculations">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-700">
-                <thead className="bg-orange-50/80 text-orange-950 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200 font-mono">
-                  <tr>
-                    <th className="p-3">Timestamp</th>
-                    <th className="p-3">Wind Speed</th>
-                    <th className="p-3">WPD (W/m²)</th>
-                    <th className="p-3">Capacity Factor</th>
-                    <th className="p-3">Expected AEP</th>
-                    <th className="p-3">Suitability</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 font-mono">
-                  {assessments.map((a) => (
-                    <tr key={a.id} className="hover:bg-orange-50/30 transition-colors">
-                      <td className="p-3 text-slate-500 font-sans">{new Date(a.created_at).toLocaleTimeString()}</td>
-                      <td className="p-3 text-sky-700 font-bold">{a.average_wind_speed} m/s</td>
-                      <td className="p-3 font-bold">{a.wind_power_density} W/m²</td>
-                      <td className="p-3 text-sky-600 font-bold">{a.capacity_factor}%</td>
-                      <td className="p-3 text-emerald-600 font-bold">{fmtNum(a.expected_annual_energy_production)} MWh</td>
-                      <td className="p-3 text-orange-600 text-[11px] font-bold">{a.turbine_suitability}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
           </Card>
         </div>
@@ -307,4 +388,3 @@ export default function WindAnalysisPage() {
     </div>
   );
 }
-

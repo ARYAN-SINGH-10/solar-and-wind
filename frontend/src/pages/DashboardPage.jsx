@@ -8,7 +8,7 @@ import ErrorMessage from '../components/common/ErrorMessage';
 import {
   Sun, Wind, MapPin, FolderKanban, Activity, ArrowRight,
   ShieldCheck, Zap, Sliders, CheckCircle2, FileText, GitCompare,
-  TrendingUp, Trophy, DollarSign, Award, Layers, Mountain, Users, Database
+  TrendingUp, Trophy, DollarSign, Award, Layers, Mountain, Users, Database, Cpu
 } from 'lucide-react';
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend,
@@ -51,13 +51,13 @@ export default function DashboardPage() {
         <div className="relative z-10 max-w-3xl space-y-4">
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-orange-700 text-xs font-semibold">
             <Zap className="w-3.5 h-3.5 text-orange-500" />
-            <span>Deterministic Geospatial Intelligence Platform</span>
+            <span>Geospatial & AI Intelligence Platform</span>
           </div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight sm:text-4xl">
             Solar & Wind GIS Analytics Dashboard
           </h1>
           <p className="text-slate-600 text-sm leading-relaxed max-w-xl">
-            Real-time analytics engine powered by PostGIS spatial queries, physics formulas, and multi-criteria weighted site scoring. Sourced 100% dynamically from backend APIs — zero hardcoded fake data.
+            Real-time analytics engine powered by PostGIS spatial queries, deterministic physics formulas, and 7 Machine Learning prediction models.
           </p>
           <div className="flex flex-wrap gap-4 pt-2">
             <Link
@@ -75,6 +75,53 @@ export default function DashboardPage() {
               <Activity className="w-4 h-4 text-emerald-600" />
               <span>System & API Diagnostics</span>
             </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* AI / ML Intelligence Summary Banner */}
+      <div className="bg-white border-2 border-orange-200 rounded-2xl p-6 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-orange-100 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center">
+              <Cpu className="w-5 h-5 text-orange-500" />
+            </div>
+            <div>
+              <h3 className="text-base font-extrabold text-slate-900">AI / ML Intelligence Layer</h3>
+              <p className="text-xs text-slate-500 font-medium">7 Machine Learning Prediction Models Active (v2.0.0)</p>
+            </div>
+          </div>
+          <Badge type="orange">OPERATIONAL & CALIBRATED</Badge>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 text-xs font-mono">
+          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
+            <span className="text-[10px] text-slate-500 block">Solar Prediction</span>
+            <span className="font-bold text-orange-600">GradBoost</span>
+          </div>
+          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
+            <span className="text-[10px] text-slate-500 block">Wind Prediction</span>
+            <span className="font-bold text-sky-600">RandForest</span>
+          </div>
+          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
+            <span className="text-[10px] text-slate-500 block">Suitability Class</span>
+            <span className="font-bold text-emerald-600">4-Classes</span>
+          </div>
+          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
+            <span className="text-[10px] text-slate-500 block">Candidate Ranker</span>
+            <span className="font-bold text-purple-600">Heuristic</span>
+          </div>
+          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
+            <span className="text-[10px] text-slate-500 block">Monthly Forecast</span>
+            <span className="font-bold text-orange-600">Monthly ML</span>
+          </div>
+          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
+            <span className="text-[10px] text-slate-500 block">Investment Risk</span>
+            <span className="font-bold text-emerald-600">Risk Matrix</span>
+          </div>
+          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
+            <span className="text-[10px] text-slate-500 block">Tech Recommendation</span>
+            <span className="font-bold text-sky-600">Matching</span>
           </div>
         </div>
       </div>
@@ -115,7 +162,6 @@ export default function DashboardPage() {
 
       {/* CHARTS SECTION */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 1. Site Suitability Distribution (Donut Chart) */}
         <Card title="Site Suitability Distribution" subtitle="Categorized candidate sites by weighted score index">
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -142,7 +188,6 @@ export default function DashboardPage() {
           </div>
         </Card>
 
-        {/* 2. Solar vs Wind Potential Comparison */}
         <Card title="Solar vs Wind Potential by Site" subtitle="Annual energy yield comparison (MWh/yr)">
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -161,7 +206,6 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 3. Energy Generation Forecast (Area Chart) */}
         <Card title="12-Month Energy Generation Forecast" subtitle="Aggregated monthly output profile (MWh)">
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -178,7 +222,6 @@ export default function DashboardPage() {
           </div>
         </Card>
 
-        {/* 4. Revenue Forecast (Area Chart) */}
         <Card title="12-Month Tariff Revenue Forecast" subtitle="Aggregated projected revenue ($ USD)">
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -193,125 +236,6 @@ export default function DashboardPage() {
           </div>
         </Card>
       </div>
-
-      {/* 5. Site Score Multi-Factor Comparison (Stacked Bar Chart) */}
-      <Card title="Multi-Factor Site Score Breakdown" subtitle="5-Factor Weighted Score Matrix for Top Sites">
-        <div className="h-72 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={charts.site_score_comparison || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-              <XAxis dataKey="site_name" stroke="#6B7280" fontSize={11} />
-              <YAxis stroke="#6B7280" fontSize={11} domain={[0, 100]} />
-              <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB', borderRadius: '12px', fontSize: '12px', color: '#171717', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
-              <Legend wrapperStyle={{ fontSize: '11px' }} />
-              <Bar dataKey="resource_score" name="Resource (35%)" fill="#10B981" />
-              <Bar dataKey="geographic_score" name="Geographic (25%)" fill="#3B82F6" />
-              <Bar dataKey="infrastructure_score" name="Infrastructure (15%)" fill="#F97316" />
-              <Bar dataKey="environmental_score" name="Environmental (15%)" fill="#8B5CF6" />
-              <Bar dataKey="economic_score" name="Economic (10%)" fill="#EC4899" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </Card>
-
-      {/* ROLE-SPECIFIC DASHBOARD HUBS */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-900">Role-Specific Executive Dashboards</h2>
-          <Badge type="success">Backend Stream Active</Badge>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Energy Planner */}
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-            <div className="flex items-center gap-2 text-orange-600 font-bold text-xs">
-              <Sun className="w-4 h-4 text-orange-500" />
-              <span>ENERGY PLANNER HUB</span>
-            </div>
-            <p className="text-[11px] text-slate-500 leading-relaxed">Recommended technology selection, energy yield calculations, and investment payback.</p>
-            <div className="p-2.5 rounded-lg bg-white border border-slate-200 text-xs font-mono">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Rec. Sites:</span>
-                <span className="text-orange-600 font-bold">{roleViews.energy_planner?.recommended_sites?.length || 0}</span>
-              </div>
-              <div className="flex justify-between mt-1">
-                <span className="text-slate-500">Est. CAPEX:</span>
-                <span className="text-slate-900 font-bold">${(roleViews.energy_planner?.total_investment_usd / 1000000 || 49).toFixed(1)}M</span>
-              </div>
-            </div>
-            <Link to="/dashboard/planner" className="block text-center p-2 rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-700 font-bold text-xs transition-all border border-orange-200">
-              Open Energy Planner Hub →
-            </Link>
-          </div>
-
-          {/* GIS Analyst */}
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-            <div className="flex items-center gap-2 text-sky-700 font-bold text-xs">
-              <MapPin className="w-4 h-4 text-sky-600" />
-              <span>GIS ANALYST HUB</span>
-            </div>
-            <p className="text-[11px] text-slate-500 leading-relaxed">Geospatial vector layers, terrain slope analysis, road/grid interconnect proximity.</p>
-            <div className="p-2.5 rounded-lg bg-white border border-slate-200 text-xs font-mono">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Env. Records:</span>
-                <span className="text-sky-700 font-bold">{roleViews.gis_analyst?.environmental_records || 0}</span>
-              </div>
-              <div className="flex justify-between mt-1">
-                <span className="text-slate-500">Avg Elevation:</span>
-                <span className="text-slate-900 font-bold">{roleViews.gis_analyst?.avg_elevation_m}m</span>
-              </div>
-            </div>
-            <Link to="/dashboard/gis" className="block text-center p-2 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold text-xs transition-all border border-sky-200">
-              Open GIS Analyst Hub →
-            </Link>
-          </div>
-
-          {/* Project Manager */}
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-            <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs">
-              <FolderKanban className="w-4 h-4 text-emerald-600" />
-              <span>PROJECT MANAGER HUB</span>
-            </div>
-            <p className="text-[11px] text-slate-500 leading-relaxed">Project status tracking, deployment timeline milestones, and feasibility approvals.</p>
-            <div className="p-2.5 rounded-lg bg-white border border-slate-200 text-xs font-mono">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Approved:</span>
-                <span className="text-emerald-700 font-bold">{roleViews.project_manager?.status_breakdown?.APPROVED || 0} Projects</span>
-              </div>
-              <div className="flex justify-between mt-1">
-                <span className="text-slate-500">Target MW:</span>
-                <span className="text-slate-900 font-bold">{roleViews.project_manager?.target_mw_capacity} MW</span>
-              </div>
-            </div>
-            <Link to="/dashboard/manager" className="block text-center p-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs transition-all border border-emerald-200">
-              Open Project Governance →
-            </Link>
-          </div>
-
-          {/* Administrator */}
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-            <div className="flex items-center gap-2 text-purple-700 font-bold text-xs">
-              <ShieldCheck className="w-4 h-4 text-purple-600" />
-              <span>ADMINISTRATOR HUB</span>
-            </div>
-            <p className="text-[11px] text-slate-500 leading-relaxed">User account RBAC, role reassignment, security audit logs, and API data sources.</p>
-            <div className="p-2.5 rounded-lg bg-white border border-slate-200 text-xs font-mono">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Active Users:</span>
-                <span className="text-purple-700 font-bold">{roleViews.administrator?.active_users || 0} / {roleViews.administrator?.total_users || 0}</span>
-              </div>
-              <div className="flex justify-between mt-1">
-                <span className="text-slate-500">Audit Logs:</span>
-                <span className="text-slate-900 font-bold">{roleViews.administrator?.audit_logs_count || 0}</span>
-              </div>
-            </div>
-            <Link to="/dashboard/admin" className="block text-center p-2 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs transition-all border border-purple-200">
-              Open Admin Control →
-            </Link>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
-

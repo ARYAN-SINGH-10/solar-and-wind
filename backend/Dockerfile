@@ -18,5 +18,5 @@ COPY . .
 
 EXPOSE 8000
 
-# Production FastAPI Uvicorn Command
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 4"]
+# Production FastAPI Uvicorn Command (defaults to 1 worker for free-tier 512MB RAM)
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${WORKERS:-1}"]

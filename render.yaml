@@ -7,7 +7,7 @@ services:
     env: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    plan: starter  # Starter ($7/mo) recommended for Scikit-Learn ML models & PostGIS (512MB RAM)
+    plan: free  # 100% Free tier (No credit card / payment required)
     region: oregon
     healthCheckPath: /api/v1/health
     envVars:

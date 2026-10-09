@@ -50,7 +50,6 @@ services:
 databases:
   - name: solar-wind-postgres
     databaseName: solar_wind_db
-    user: postgres
     plan: free # Free tier or starter tier
     region: oregon
-    postgresMajorVersion: 15
+    postgresMajorVersion: "15"

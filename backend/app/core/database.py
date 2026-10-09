@@ -4,8 +4,11 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 from app.core.config import settings
 
 db_uri = settings.SQLALCHEMY_DATABASE_URI
-if db_uri and db_uri.startswith("postgresql://"):
-    db_uri = db_uri.replace("postgresql://", "postgresql+psycopg2://", 1)
+if db_uri:
+    if db_uri.startswith("postgres://"):
+        db_uri = db_uri.replace("postgres://", "postgresql+psycopg2://", 1)
+    elif db_uri.startswith("postgresql://"):
+        db_uri = db_uri.replace("postgresql://", "postgresql+psycopg2://", 1)
 try:
     engine = create_engine(
         db_uri,

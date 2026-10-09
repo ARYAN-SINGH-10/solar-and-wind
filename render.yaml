@@ -4,12 +4,12 @@ services:
   # ==============================================================================
   - type: web
     name: solar-wind-backend
-    env: docker
+    runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     plan: free  # 100% Free tier (No credit card / payment required)
     region: oregon
-    healthCheckPath: /api/v1/health
+    healthCheckPath: /
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -29,7 +29,7 @@ services:
   # ==============================================================================
   - type: web
     name: solar-wind-frontend
-    env: static
+    runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist

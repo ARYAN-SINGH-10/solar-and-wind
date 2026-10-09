@@ -83,6 +83,7 @@ class SiteUpdate(BaseModel):
 class SiteResponse(SiteBase):
     id: UUID
     project_id: UUID
+    created_by: Optional[UUID] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 

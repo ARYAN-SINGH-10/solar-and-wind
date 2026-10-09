@@ -8,6 +8,11 @@ from app.core.database import get_db
 from app.models.user import User
 from app.models.report import Report
 from app.api.v1.deps import require_roles
+from app.services.access_control import (
+    get_authorized_site,
+    get_authorized_report,
+    filter_reports_by_user,
+)
 from app.services.report_service import (
     generate_site_report,
     generate_report_binary,
@@ -83,6 +88,7 @@ def create_investment_report(
 
 
 def _generate_and_audit(db: Session, site_id: str, report_type: str, user: User, request: Request):
+    get_authorized_site(db, site_id, user)
     try:
         report = generate_site_report(
             db=db,
@@ -122,8 +128,9 @@ def list_all_reports(
     current_user: User = Depends(require_roles(["ENERGY_PLANNER", "GIS_ANALYST", "PROJECT_MANAGER", "ADMINISTRATOR"])),
     db: Session = Depends(get_db),
 ):
-    """List all generated reports across the platform with pagination."""
-    return get_all_reports(db=db, limit=limit, offset=offset)
+    """List all generated reports authorized for the current user with pagination."""
+    query = filter_reports_by_user(db.query(Report), current_user, db)
+    return query.order_by(Report.generated_at.desc()).offset(offset).limit(limit).all()
 
 
 @router.get("/reports/{report_id}")
@@ -133,9 +140,7 @@ def get_report_by_id(
     db: Session = Depends(get_db),
 ):
     """Retrieve a specific report by ID including full JSON payload."""
-    report = db.query(Report).filter(Report.id == report_id).first()
-    if not report:
-        raise HTTPException(status_code=404, detail="Report not found")
+    report = get_authorized_report(db, report_id, current_user)
     return report
 
 
@@ -150,9 +155,7 @@ def download_report(
     Download actual report in PDF or Excel (.xlsx) format.
     Renders actual database metrics into styled binary files.
     """
-    report = db.query(Report).filter(Report.id == report_id).first()
-    if not report:
-        raise HTTPException(status_code=404, detail="Report not found")
+    report = get_authorized_report(db, report_id, current_user)
 
     content, filename, media_type = generate_report_binary(report, fmt=format)
 
@@ -174,9 +177,7 @@ def delete_report(
     db: Session = Depends(get_db),
 ):
     """Delete a report record (Administrator only)."""
-    report = db.query(Report).filter(Report.id == report_id).first()
-    if not report:
-        raise HTTPException(status_code=404, detail="Report not found")
+    report = get_authorized_report(db, report_id, current_user)
     db.delete(report)
     db.commit()
     return None

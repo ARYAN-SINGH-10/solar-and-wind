@@ -10,6 +10,7 @@ from app.models.solar_assessment import SolarAssessment
 from app.models.wind_assessment import WindAssessment
 from app.models.energy_forecast import EnergyForecast
 from app.api.v1.deps import require_roles
+from app.services.access_control import get_authorized_site
 from app.services.forecast_service import (
     run_and_store_energy_forecast,
     calculate_deterministic_energy_forecast
@@ -36,9 +37,7 @@ def calculate_energy_forecast(
     current_user: User = Depends(require_roles(["ENERGY_PLANNER", "PROJECT_MANAGER", "ADMINISTRATOR"])),
     db: Session = Depends(get_db)
 ):
-    site = db.query(Site).filter(Site.id == site_id).first()
-    if not site:
-        raise HTTPException(status_code=404, detail="Candidate site not found")
+    site = get_authorized_site(db, site_id, current_user)
 
     # Prerequisite Guardrail
     import uuid as _uuid
@@ -104,9 +103,7 @@ def get_energy_forecast(
     current_user: User = Depends(require_roles(["ENERGY_PLANNER", "GIS_ANALYST", "PROJECT_MANAGER", "ADMINISTRATOR"])),
     db: Session = Depends(get_db)
 ):
-    site = db.query(Site).filter(Site.id == site_id).first()
-    if not site:
-        raise HTTPException(status_code=404, detail="Candidate site not found")
+    site = get_authorized_site(db, site_id, current_user)
 
     return calculate_deterministic_energy_forecast(
         installed_capacity_mw=capacity,
@@ -121,6 +118,7 @@ def get_monthly_forecast(
     current_user: User = Depends(require_roles(["ENERGY_PLANNER", "GIS_ANALYST", "PROJECT_MANAGER", "ADMINISTRATOR"])),
     db: Session = Depends(get_db)
 ):
+    site = get_authorized_site(db, site_id, current_user)
     records = db.query(EnergyForecast).filter(EnergyForecast.site_id == site_id).order_by(EnergyForecast.created_at.desc()).all()
     return records
 
@@ -131,6 +129,7 @@ def get_annual_forecast(
     current_user: User = Depends(require_roles(["ENERGY_PLANNER", "GIS_ANALYST", "PROJECT_MANAGER", "ADMINISTRATOR"])),
     db: Session = Depends(get_db)
 ):
+    site = get_authorized_site(db, site_id, current_user)
     return calculate_deterministic_energy_forecast(
         installed_capacity_mw=15.0,
         technology="HYBRID",

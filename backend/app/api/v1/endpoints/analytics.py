@@ -23,7 +23,7 @@ def get_dashboard_analytics_data(
     - Role-Specific Metrics for Planner, GIS, Manager, Admin
     Data is computed dynamically from PostgreSQL/PostGIS. Zero fake data!
     """
-    return get_dashboard_analytics(db=db)
+    return get_dashboard_analytics(db=db, current_user=current_user)
 
 
 @router.get("/gis-layers")
@@ -38,4 +38,4 @@ def get_gis_layers_analytics_data(
     - Water Bodies, Protected Areas
     - Solar & Wind heatmap layers
     """
-    return get_gis_layers_data(db=db)
+    return get_gis_layers_data(db=db, current_user=current_user)

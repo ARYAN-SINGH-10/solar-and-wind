@@ -9,7 +9,7 @@ export default function Footer() {
           <ShieldCheck className="w-4 h-4 text-emerald-600" />
           <span className="text-slate-700 font-semibold">Solar & Wind Deployment Intelligence Platform v1.0.0</span>
           <span className="text-slate-300">|</span>
-          <span className="text-slate-500">Zero-AI Policy Enforced</span>
+          <span className="text-slate-500">Hybrid Intelligence Architecture</span>
         </div>
 
         <div className="flex items-center space-x-6 text-slate-600 font-mono text-[11px]">
@@ -22,8 +22,8 @@ export default function Footer() {
             <span>PostgreSQL / PostGIS</span>
           </div>
           <div className="flex items-center space-x-1.5">
-            <Cpu className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Deterministic Math</span>
+            <Cpu className="w-3.5 h-3.5 text-purple-600" />
+            <span>Deterministic + AI/ML</span>
           </div>
         </div>
       </div>

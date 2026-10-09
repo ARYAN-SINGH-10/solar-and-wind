@@ -1,7 +1,7 @@
 """
 Notification and Alert Service
 Provides predefined notification templates and deterministic event trigger rules.
-Zero AI/ML used — all notification templates are strictly structured.
+Structured event notifications — all alert templates follow structured schemas.
 """
 
 from typing import List, Optional
@@ -72,7 +72,7 @@ def broadcast_notification_to_role(
 
 
 # -----------------------------------------------------------------------------
-# PREDEFINED NOTIFICATION TRIGGER RULES (Zero AI)
+# PREDEFINED NOTIFICATION TRIGGER RULES (Deterministic Rule Engine)
 # -----------------------------------------------------------------------------
 
 def trigger_environmental_change_notification(

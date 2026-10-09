@@ -22,6 +22,11 @@ from app.models.infrastructure_data import InfrastructureData
 from app.models.user import User
 from app.models.role import Role
 from app.models.audit_log import AuditLog
+from app.services.access_control import (
+    is_admin_user,
+    filter_projects_by_user,
+    filter_sites_by_user,
+)
 
 
 def _to_float(val, default=0.0) -> float:
@@ -31,24 +36,66 @@ def _to_float(val, default=0.0) -> float:
         return default
 
 
-def get_dashboard_analytics(db: Session) -> Dict[str, Any]:
+def get_dashboard_analytics(db: Session, current_user: User = None) -> Dict[str, Any]:
     """
     Computes all dashboard summary cards, chart data distributions,
-    and role-specific metrics from live PostgreSQL DB records.
+    and role-specific metrics from live PostgreSQL DB records, isolated by user.
     """
-    # 1. Base counts
-    total_projects = db.query(Project).count()
-    total_sites = db.query(Site).count()
+    # 1. Base counts & data query filtered by user authorization
+    is_admin = is_admin_user(current_user, db) if current_user else True
+
+    if current_user and not is_admin:
+        proj_query = filter_projects_by_user(db.query(Project), current_user, db)
+        total_projects = proj_query.count()
+        sites_query = filter_sites_by_user(db.query(Site), current_user, db)
+        sites = sites_query.order_by(Site.created_at.desc()).all()
+        total_sites = len(sites)
+        site_ids = [s.id for s in sites]
+
+        scores = db.query(SiteScore).filter(SiteScore.site_id.in_(site_ids)).all() if site_ids else []
+        solar_records = db.query(SolarAssessment).filter(SolarAssessment.site_id.in_(site_ids)).all() if site_ids else []
+        wind_records = db.query(WindAssessment).filter(WindAssessment.site_id.in_(site_ids)).all() if site_ids else []
+        recs = db.query(Recommendation).filter(Recommendation.site_id.in_(site_ids)).all() if site_ids else []
+
+        env_count = db.query(EnvironmentalData).filter(EnvironmentalData.site_id.in_(site_ids)).count() if site_ids else 0
+        infra_count = db.query(InfrastructureData).filter(InfrastructureData.site_id.in_(site_ids)).count() if site_ids else 0
+        avg_elevation = db.query(func.avg(Site.elevation)).filter(Site.id.in_(site_ids)).scalar() if site_ids else 0.0
+        avg_area = db.query(func.avg(Site.land_area)).filter(Site.id.in_(site_ids)).scalar() if site_ids else 0.0
+
+        proj_status_counts = (
+            proj_query.with_entities(Project.status, func.count(Project.id))
+            .group_by(Project.status)
+            .all()
+        )
+    else:
+        total_projects = db.query(Project).count()
+        sites = db.query(Site).order_by(Site.created_at.desc()).all()
+        total_sites = len(sites)
+        site_ids = [s.id for s in sites]
+
+        scores = db.query(SiteScore).all()
+        solar_records = db.query(SolarAssessment).all()
+        wind_records = db.query(WindAssessment).all()
+        recs = db.query(Recommendation).all()
+
+        env_count = db.query(EnvironmentalData).count()
+        infra_count = db.query(InfrastructureData).count()
+        avg_elevation = db.query(func.avg(Site.elevation)).scalar() or 0.0
+        avg_area = db.query(func.avg(Site.land_area)).scalar() or 0.0
+
+        proj_status_counts = (
+            db.query(Project.status, func.count(Project.id))
+            .group_by(Project.status)
+            .all()
+        )
 
     # 2. Site suitability category counts
-    scores = db.query(SiteScore).all()
     excellent_count = sum(1 for s in scores if s.category == "Excellent")
     highly_suitable_count = sum(1 for s in scores if s.category == "Highly Suitable")
     moderately_count = sum(1 for s in scores if s.category == "Moderately Suitable")
     low_count = sum(1 for s in scores if s.category == "Low Suitability")
     unsuitable_count = sum(1 for s in scores if s.category == "Unsuitable")
 
-    # If no scores computed yet, compute default distribution from sites count
     suitability_distribution = [
         {"name": "Excellent", "value": excellent_count, "color": "#10B981"},
         {"name": "Highly Suitable", "value": highly_suitable_count, "color": "#3B82F6"},
@@ -58,9 +105,6 @@ def get_dashboard_analytics(db: Session) -> Dict[str, Any]:
     ]
 
     # 3. Solar & Wind Potentials
-    solar_records = db.query(SolarAssessment).all()
-    wind_records = db.query(WindAssessment).all()
-
     total_solar_kwh = sum(_to_float(s.expected_energy_output) for s in solar_records)
     total_wind_kwh = sum(_to_float(w.expected_annual_energy_production) for w in wind_records)
 
@@ -69,23 +113,19 @@ def get_dashboard_analytics(db: Session) -> Dict[str, Any]:
     expected_energy_mwh = round((total_solar_kwh + total_wind_kwh) / 1000.0, 2)
 
     # 4. Revenue Estimation from Recommendations / Forecasts
-    recs = db.query(Recommendation).all()
     total_revenue_usd = sum(_to_float(r.expected_revenue) for r in recs)
-
-    # If no recs exist, compute from expected energy @ $65/MWh
     if total_revenue_usd == 0 and expected_energy_mwh > 0:
         total_revenue_usd = round(expected_energy_mwh * 65.0, 2)
 
     # 5. Solar vs Wind Potential per site (Top 8 sites)
-    sites = db.query(Site).order_by(Site.created_at.desc()).limit(8).all()
+    top_sites = sites[:8]
     solar_vs_wind = []
     site_score_comparison = []
 
-    for site in sites:
+    for site in top_sites:
         sol = db.query(SolarAssessment).filter(SolarAssessment.site_id == site.id).order_by(SolarAssessment.created_at.desc()).first()
         wnd = db.query(WindAssessment).filter(WindAssessment.site_id == site.id).order_by(WindAssessment.created_at.desc()).first()
         scr = db.query(SiteScore).filter(SiteScore.site_id == site.id).order_by(SiteScore.calculated_at.desc()).first()
-        rcm = db.query(Recommendation).filter(Recommendation.site_id == site.id).order_by(Recommendation.created_at.desc()).first()
 
         sol_mwh = round(_to_float(sol.expected_energy_output) / 1000.0, 2) if sol else 0.0
         wnd_mwh = round(_to_float(wnd.expected_annual_energy_production) / 1000.0, 2) if wnd else 0.0
@@ -116,20 +156,27 @@ def get_dashboard_analytics(db: Session) -> Dict[str, Any]:
     energy_forecast = []
     revenue_forecast = []
 
-    base_annual_mwh = expected_energy_mwh if expected_energy_mwh > 0 else 75000.0
-    base_annual_rev = total_revenue_usd if total_revenue_usd > 0 else 4875000.0
+    base_annual_mwh = expected_energy_mwh
+    base_annual_rev = total_revenue_usd
 
     for idx, month in enumerate(months):
         m_energy = round(base_annual_mwh * monthly_weights[idx], 2)
         m_rev = round(base_annual_rev * monthly_weights[idx], 2)
-        energy_forecast.append({"month": month, "energy_mwh": m_energy, "solar_mwh": round(m_energy * 0.55, 2), "wind_mwh": round(m_energy * 0.45, 2)})
+        energy_forecast.append({
+            "month": month,
+            "energy_mwh": m_energy,
+            "solar_mwh": round(m_energy * 0.55, 2) if m_energy > 0 else 0.0,
+            "wind_mwh": round(m_energy * 0.45, 2) if m_energy > 0 else 0.0
+        })
         revenue_forecast.append({"month": month, "revenue_usd": m_rev})
 
     # 7. Role-Specific Aggregations
     # Energy Planner
     recommended_sites = []
     for r in recs:
-        s = db.query(Site).filter(Site.id == r.site_id).first()
+        s = next((st for st in sites if st.id == r.site_id), None)
+        if not s:
+            s = db.query(Site).filter(Site.id == r.site_id).first()
         if s:
             recommended_sites.append({
                 "site_id": str(s.id),
@@ -144,27 +191,17 @@ def get_dashboard_analytics(db: Session) -> Dict[str, Any]:
             })
 
     # GIS Analyst
-    env_count = db.query(EnvironmentalData).count()
-    infra_count = db.query(InfrastructureData).count()
-    avg_elevation = db.query(func.avg(Site.elevation)).scalar() or 650.0
-    avg_area = db.query(func.avg(Site.land_area)).scalar() or 14.5
-
     gis_summary = {
         "environmental_records": env_count,
         "infrastructure_records": infra_count,
         "avg_elevation_m": round(_to_float(avg_elevation), 2),
         "avg_land_area_km2": round(_to_float(avg_area), 2),
-        "grid_lines_km": 142.5,
-        "protected_areas_count": 3,
-        "substations_count": 8,
+        "grid_lines_km": round(len(site_ids) * 23.5, 1) if site_ids else 0.0,
+        "protected_areas_count": min(3, len(site_ids)) if site_ids else 0,
+        "substations_count": min(8, len(site_ids) * 2) if site_ids else 0,
     }
 
     # Project Manager
-    proj_status_counts = (
-        db.query(Project.status, func.count(Project.id))
-        .group_by(Project.status)
-        .all()
-    )
     status_dict = {st: cnt for st, cnt in proj_status_counts}
 
     pm_summary = {
@@ -174,13 +211,13 @@ def get_dashboard_analytics(db: Session) -> Dict[str, Any]:
             "APPROVED": status_dict.get("APPROVED", 0),
             "ARCHIVED": status_dict.get("ARCHIVED", 0),
         },
-        "target_mw_capacity": 250.0,
-        "approved_mw_capacity": 85.0,
+        "target_mw_capacity": round(total_sites * 15.0, 1),
+        "approved_mw_capacity": round(status_dict.get("APPROVED", 0) * 15.0, 1),
         "deployment_milestones": [
-            {"stage": "Site Identification", "completed": total_sites, "target": 20},
-            {"stage": "Environmental Assessment", "completed": env_count, "target": 15},
-            {"stage": "Feasibility Approval", "completed": len(recs), "target": 10},
-            {"stage": "Grid Interconnection", "completed": status_dict.get("APPROVED", 0), "target": 5},
+            {"stage": "Site Identification", "completed": total_sites, "target": max(20, total_sites) if total_sites > 0 else 0},
+            {"stage": "Environmental Assessment", "completed": env_count, "target": max(15, env_count) if total_sites > 0 else 0},
+            {"stage": "Feasibility Approval", "completed": len(recs), "target": max(10, len(recs)) if total_sites > 0 else 0},
+            {"stage": "Grid Interconnection", "completed": status_dict.get("APPROVED", 0), "target": max(5, status_dict.get("APPROVED", 0)) if total_sites > 0 else 0},
         ]
     }
 
@@ -234,13 +271,40 @@ def get_dashboard_analytics(db: Session) -> Dict[str, Any]:
     }
 
 
-def get_gis_layers_data(db: Session) -> Dict[str, Any]:
+def get_gis_layers_data(db: Session, current_user: User = None) -> Dict[str, Any]:
     """
     Returns rich geospatial features (sites with popup metadata, roads, substations,
     transmission lines, water bodies, protected areas, heatmaps, solar & wind layers).
-    Derived from PostGIS records.
+    Derived from PostGIS records, isolated by user permissions.
     """
-    raw_sites = db.query(Site).all()
+    is_admin = is_admin_user(current_user, db) if current_user else True
+    if current_user and not is_admin:
+        raw_sites = filter_sites_by_user(db.query(Site), current_user, db).all()
+    else:
+        raw_sites = db.query(Site).all()
+
+    if not raw_sites:
+        return {
+            "sites_geojson": {
+                "type": "FeatureCollection",
+                "features": [],
+            },
+            "infrastructure": {
+                "substations": [],
+                "transmission_lines": [],
+                "roads": [],
+            },
+            "environmental_constraints": {
+                "water_bodies": [],
+                "protected_areas": [],
+            },
+            "layers_meta": {
+                "suitability_heatmap": "EMPTY",
+                "solar_potential_layer": "EMPTY",
+                "wind_potential_layer": "EMPTY",
+            }
+        }
+
     site_features = []
 
     for s in raw_sites:
@@ -250,14 +314,14 @@ def get_gis_layers_data(db: Session) -> Dict[str, Any]:
         rcm = db.query(Recommendation).filter(Recommendation.site_id == s.id).order_by(Recommendation.created_at.desc()).first()
         env = db.query(EnvironmentalData).filter(EnvironmentalData.site_id == s.id).order_by(EnvironmentalData.created_at.desc()).first()
 
-        overall_score = _to_float(scr.overall_score) if scr else (78.5 if s.land_area and float(s.land_area) > 10 else 65.0)
-        category = scr.category if scr else ("Excellent" if overall_score >= 90 else ("Highly Suitable" if overall_score >= 80 else ("Moderately Suitable" if overall_score >= 65 else ("Low Suitability" if overall_score >= 50 else "Unsuitable"))))
-        solar_score = round(min(100.0, _to_float(env.solar_irradiance, 2150.0) / 22.0), 1) if env else 82.5
-        wind_score = round(min(100.0, _to_float(env.wind_speed, 7.2) * 11.0), 1) if env else 71.0
-        tech = rcm.technology if rcm else ("SOLAR" if solar_score > wind_score else "WIND")
+        overall_score = _to_float(scr.overall_score) if scr else 0.0
+        category = scr.category if scr else "Pending Assessment"
+        solar_score = round(min(100.0, _to_float(env.solar_irradiance, 0.0) / 22.0), 1) if env else 0.0
+        wind_score = round(min(100.0, _to_float(env.wind_speed, 0.0) * 11.0), 1) if env else 0.0
+        tech = rcm.technology if rcm else ("SOLAR" if solar_score >= wind_score else "WIND")
 
-        sol_kwh = _to_float(sol.expected_energy_output) if sol else 68000000.0
-        wnd_kwh = _to_float(wnd.expected_annual_energy_production) if wnd else 45000000.0
+        sol_kwh = _to_float(sol.expected_energy_output) if sol else 0.0
+        wnd_kwh = _to_float(wnd.expected_annual_energy_production) if wnd else 0.0
         expected_mwh = round((sol_kwh + wnd_kwh) / 1000.0, 2)
         rev_usd = _to_float(rcm.expected_revenue) if rcm else round(expected_mwh * 65.0, 2)
 

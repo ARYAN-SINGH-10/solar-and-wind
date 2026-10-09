@@ -83,9 +83,10 @@ class PostGISSiteCreationTests(unittest.TestCase):
         headers = {"Authorization": f"Bearer {token}"}
 
         # 2. Create Project
+        import uuid
         proj_payload = {
             "project_name": "PostGIS Solar Park",
-            "project_code": "PG-SOLAR-01",
+            "project_code": f"PG-SOLAR-{uuid.uuid4().hex[:6].upper()}",
             "description": "Geospatial site creation test",
             "region": "Central India",
             "target_capacity_mw": 100.0,

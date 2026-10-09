@@ -170,15 +170,15 @@ export default function HealthStatusPage() {
         </div>
       </div>
 
-      {/* Deterministic Engine & Zero AI Audit Panel */}
+      {/* Deterministic Engine & AI/ML Architecture Panel */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
         <div className="flex items-center space-x-3">
           <div className="p-2 rounded-lg bg-orange-50 text-orange-600 border border-orange-200">
             <Cpu className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-slate-900">Deterministic Intelligence Engine Status</h2>
-            <p className="text-slate-500 text-xs font-medium">Verification of mathematical rule-based analysis modules</p>
+            <h2 className="text-lg font-bold text-slate-900">Deterministic Engine & AI/ML Intelligence Status</h2>
+            <p className="text-slate-500 text-xs font-medium">Verification of authoritative mathematical analysis modules and supplemental AI/ML models</p>
           </div>
         </div>
 
@@ -211,10 +211,10 @@ export default function HealthStatusPage() {
           </div>
         </div>
 
-        <div className="mt-4 p-3 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-between text-xs">
-          <div className="flex items-center space-x-2 text-orange-700 font-bold">
-            <ShieldCheck className="w-4 h-4" />
-            <span>Zero-AI Policy Audit: 100% compliant. No machine learning models detected or imported.</span>
+        <div className="mt-4 p-3 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-between text-xs">
+          <div className="flex items-center space-x-2 text-purple-700 font-bold">
+            <ShieldCheck className="w-4 h-4 text-purple-600" />
+            <span>Hybrid Architecture: Authoritative deterministic physics calculations verified; 7 supplemental AI/ML prediction models active.</span>
           </div>
           <span className="text-slate-500 font-mono text-[10px]">Last Checked: {lastChecked || 'Just now'}</span>
         </div>

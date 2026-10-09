@@ -14,9 +14,13 @@ Verifies:
   9. NASA POWER API error graceful degradation (returns None metrics and failure source).
 """
 
+import os
+import sys
 import unittest
 import asyncio
 from unittest.mock import patch, MagicMock
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from app.services.solar_calculation_service import (
     calculate_solar_pv_performance,
     calculate_deterministic_solar_output,

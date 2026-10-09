@@ -160,47 +160,89 @@ export default function DashboardPage() {
         ))}
       </div>
 
+      {/* Empty State Banner for New Accounts */}
+      {cards.total_projects === 0 && cards.total_sites === 0 && (
+        <div className="bg-gradient-to-r from-orange-50 via-amber-50 to-orange-50 border-2 border-dashed border-orange-300 rounded-2xl p-8 text-center space-y-4 shadow-xs">
+          <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-orange-200 flex items-center justify-center mx-auto text-orange-500">
+            <FolderKanban className="w-8 h-8" />
+          </div>
+          <div className="max-w-md mx-auto space-y-2">
+            <h2 className="text-xl font-bold text-slate-900">Welcome to your Clean Workspace!</h2>
+            <p className="text-sm text-slate-600">
+              You currently have zero projects and candidate sites. Your account data is completely isolated.
+              Get started by creating your first renewable energy project and adding candidate sites for assessment.
+            </p>
+          </div>
+          <div className="pt-2">
+            <Link
+              to="/projects"
+              className="inline-flex items-center space-x-2 px-6 py-3 bg-orange-600 text-white font-bold rounded-xl hover:bg-orange-700 transition-all text-sm shadow-md"
+            >
+              <FolderKanban className="w-4 h-4" />
+              <span>Create Your First Project</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* CHARTS SECTION */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card title="Site Suitability Distribution" subtitle="Categorized candidate sites by weighted score index">
           <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={charts.suitability_distribution || []}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={85}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {(charts.suitability_distribution || []).map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB', borderRadius: '12px', fontSize: '12px', color: '#171717', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                />
-                <Legend wrapperStyle={{ fontSize: '11px', color: '#6B7280' }} />
-              </PieChart>
-            </ResponsiveContainer>
+            {(charts.suitability_distribution || []).every(e => e.value === 0) ? (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-2">
+                <MapPin className="w-8 h-8 text-slate-300" />
+                <p className="text-xs font-medium text-slate-600">No candidate sites assessed yet.</p>
+                <p className="text-[11px] text-slate-400">Add candidate sites and calculate suitability scores to visualize distribution.</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={charts.suitability_distribution || []}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={85}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {(charts.suitability_distribution || []).map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB', borderRadius: '12px', fontSize: '12px', color: '#171717', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: '11px', color: '#6B7280' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </Card>
 
         <Card title="Solar vs Wind Potential by Site" subtitle="Annual energy yield comparison (MWh/yr)">
           <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={charts.solar_vs_wind_potential || []}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                <XAxis dataKey="site_name" stroke="#6B7280" fontSize={10} />
-                <YAxis stroke="#6B7280" fontSize={10} />
-                <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB', borderRadius: '12px', fontSize: '12px', color: '#171717', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
-                <Legend wrapperStyle={{ fontSize: '11px' }} />
-                <Bar dataKey="solar_mwh" name="Solar MWh" fill="#F97316" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="wind_mwh" name="Wind MWh" fill="#0EA5E9" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {(charts.solar_vs_wind_potential || []).length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-2">
+                <Sun className="w-8 h-8 text-slate-300" />
+                <p className="text-xs font-medium text-slate-600">No site energy assessments available.</p>
+                <p className="text-[11px] text-slate-400">Run solar or wind resource assessments on your sites to view comparisons.</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={charts.solar_vs_wind_potential || []}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+                  <XAxis dataKey="site_name" stroke="#6B7280" fontSize={10} />
+                  <YAxis stroke="#6B7280" fontSize={10} />
+                  <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB', borderRadius: '12px', fontSize: '12px', color: '#171717', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
+                  <Legend wrapperStyle={{ fontSize: '11px' }} />
+                  <Bar dataKey="solar_mwh" name="Solar MWh" fill="#F97316" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="wind_mwh" name="Wind MWh" fill="#0EA5E9" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </Card>
       </div>
@@ -208,31 +250,47 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card title="12-Month Energy Generation Forecast" subtitle="Aggregated monthly output profile (MWh)">
           <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={charts.energy_forecast || []}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                <XAxis dataKey="month" stroke="#6B7280" fontSize={11} />
-                <YAxis stroke="#6B7280" fontSize={11} />
-                <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB', borderRadius: '12px', fontSize: '12px', color: '#171717', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
-                <Legend wrapperStyle={{ fontSize: '11px' }} />
-                <Area type="monotone" dataKey="solar_mwh" name="Solar MWh" stackId="1" stroke="#F97316" fill="#F97316" fillOpacity={0.3} />
-                <Area type="monotone" dataKey="wind_mwh" name="Wind MWh" stackId="1" stroke="#0EA5E9" fill="#0EA5E9" fillOpacity={0.3} />
-              </AreaChart>
-            </ResponsiveContainer>
+            {(charts.energy_forecast || []).every(e => e.energy_mwh === 0) ? (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-2">
+                <Zap className="w-8 h-8 text-slate-300" />
+                <p className="text-xs font-medium text-slate-600">No energy forecast data generated.</p>
+                <p className="text-[11px] text-slate-400">Calculate 25-year and monthly forecasts on your candidate sites to view generation profiles.</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={charts.energy_forecast || []}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+                  <XAxis dataKey="month" stroke="#6B7280" fontSize={11} />
+                  <YAxis stroke="#6B7280" fontSize={11} />
+                  <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB', borderRadius: '12px', fontSize: '12px', color: '#171717', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
+                  <Legend wrapperStyle={{ fontSize: '11px' }} />
+                  <Area type="monotone" dataKey="solar_mwh" name="Solar MWh" stackId="1" stroke="#F97316" fill="#F97316" fillOpacity={0.3} />
+                  <Area type="monotone" dataKey="wind_mwh" name="Wind MWh" stackId="1" stroke="#0EA5E9" fill="#0EA5E9" fillOpacity={0.3} />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </Card>
 
         <Card title="12-Month Tariff Revenue Forecast" subtitle="Aggregated projected revenue ($ USD)">
           <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={charts.revenue_forecast || []}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                <XAxis dataKey="month" stroke="#6B7280" fontSize={11} />
-                <YAxis stroke="#6B7280" fontSize={11} />
-                <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB', borderRadius: '12px', fontSize: '12px', color: '#171717', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
-                <Area type="monotone" dataKey="revenue_usd" name="Revenue ($)" stroke="#10B981" fill="#10B981" fillOpacity={0.25} />
-              </AreaChart>
-            </ResponsiveContainer>
+            {(charts.revenue_forecast || []).every(e => e.revenue_usd === 0) ? (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-2">
+                <DollarSign className="w-8 h-8 text-slate-300" />
+                <p className="text-xs font-medium text-slate-600">No revenue projections generated.</p>
+                <p className="text-[11px] text-slate-400">Generate investment and feasibility recommendations to view projected tariff earnings.</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={charts.revenue_forecast || []}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+                  <XAxis dataKey="month" stroke="#6B7280" fontSize={11} />
+                  <YAxis stroke="#6B7280" fontSize={11} />
+                  <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB', borderRadius: '12px', fontSize: '12px', color: '#171717', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
+                  <Area type="monotone" dataKey="revenue_usd" name="Revenue ($)" stroke="#10B981" fill="#10B981" fillOpacity={0.25} />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </Card>
       </div>

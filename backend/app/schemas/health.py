@@ -9,3 +9,4 @@ class HealthCheckResponse(BaseModel):
     timestamp: str
     database: dict
     deterministic_engines: dict
+    ai_ml_services: Optional[dict] = None

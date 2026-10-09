@@ -28,10 +28,12 @@ class Site(Base):
     land_ownership = Column(String(255), nullable=True)
     existing_infrastructure = Column(Text, nullable=True)
     status = Column(String(50), default="PROPOSED")
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     project = relationship("Project", back_populates="sites")
+    creator = relationship("User", foreign_keys=[created_by])
     environmental_data = relationship("EnvironmentalData", back_populates="site", cascade="all, delete-orphan")
     geographic_data = relationship("GeographicData", back_populates="site", cascade="all, delete-orphan")
     infrastructure_data = relationship("InfrastructureData", back_populates="site", cascade="all, delete-orphan")

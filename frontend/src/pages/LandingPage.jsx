@@ -143,7 +143,7 @@ export default function LandingPage() {
               <div className="pt-6 flex items-center justify-center lg:justify-start space-x-6 text-[11px] font-mono text-slate-500 font-medium">
                 <span className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-600" /> PostGIS Spatial Engine</span>
                 <span className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-sky-600" /> Open-Meteo & NASA Telemetry</span>
-                <span className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-orange-600" /> 100% Deterministic</span>
+                <span className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-purple-600" /> Deterministic Core + AI/ML</span>
               </div>
             </div>
 

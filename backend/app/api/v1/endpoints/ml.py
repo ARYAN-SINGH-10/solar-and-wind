@@ -248,6 +248,7 @@ def predict_investment_endpoint(
 
 
 @router.post("/technology/recommend")
+@router.post("/technology/predict")
 def recommend_technology_endpoint(
     payload: MLTechnologyRecommendationInputSchema,
     current_user: User = Depends(require_roles(["ENERGY_PLANNER", "GIS_ANALYST", "PROJECT_MANAGER", "ADMINISTRATOR"])),

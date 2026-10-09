@@ -27,18 +27,18 @@ export default function Header({ systemHealth }) {
             </div>
             <div>
               <span className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
-                SOLAR & WIND <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">DETERMINISTIC GIS</span>
+                SOLAR & WIND <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">HYBRID INTELLIGENCE</span>
               </span>
               <p className="text-xs text-slate-400 hidden sm:block">Deployment Intelligence Platform</p>
             </div>
           </Link>
 
-          {/* Quick Health & Zero AI Badge */}
+          {/* Quick Health & Engine Architecture Badge */}
           <div className="flex items-center space-x-4">
             <div className="hidden md:flex items-center space-x-2 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700 text-xs">
               <Cpu className="w-3.5 h-3.5 text-amber-400" />
-              <span className="text-slate-300 font-medium">Zero-AI Policy:</span>
-              <span className="text-emerald-400 font-mono">100% Deterministic</span>
+              <span className="text-slate-300 font-medium">Architecture:</span>
+              <span className="text-emerald-400 font-mono">Deterministic + AI/ML</span>
             </div>
 
             <Link

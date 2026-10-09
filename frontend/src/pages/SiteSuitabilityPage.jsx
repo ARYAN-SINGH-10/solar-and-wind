@@ -42,15 +42,19 @@ export default function SiteSuitabilityPage() {
   const [mlError, setMlError] = useState('');
 
   const fetchMLSuitability = async (rec) => {
+    if (!rec) {
+      setMlResult(null);
+      return;
+    }
     setMlLoading(true);
     setMlError('');
     try {
       const res = await predictSuitabilityML({
-        renewable_resource_score: rec ? Number(rec.renewable_resource_score || 85.0) : 85.0,
-        geographic_score: rec ? Number(rec.geographic_score || 80.0) : 80.0,
-        infrastructure_score: rec ? Number(rec.infrastructure_score || 75.0) : 75.0,
-        environmental_score: rec ? Number(rec.environmental_score || 88.0) : 88.0,
-        economic_score: rec ? Number(rec.economic_score || 70.0) : 70.0,
+        renewable_resource_score: Number(rec.renewable_resource_score || 85.0),
+        geographic_score: Number(rec.geographic_score || 80.0),
+        infrastructure_score: Number(rec.infrastructure_score || 75.0),
+        environmental_score: Number(rec.environmental_score || 88.0),
+        economic_score: Number(rec.economic_score || 70.0),
         slope: 3.0,
         elevation: 650.0,
         grid_distance_km: 5.2,

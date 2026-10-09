@@ -17,6 +17,11 @@ from app.schemas.project import (
 from app.schemas.site import SiteCreate, SiteResponse, PaginatedSiteResponse
 from app.api.v1.deps import require_roles
 from app.services.audit_service import log_audit_event
+from app.services.access_control import (
+    filter_projects_by_user,
+    get_authorized_project,
+    is_admin_user
+)
 
 router = APIRouter()
 
@@ -35,7 +40,7 @@ def list_projects(
     List, search, and filter projects with pagination.
     Supports filtering by search query (name or code), status, and region.
     """
-    query = db.query(Project)
+    query = filter_projects_by_user(db.query(Project), current_user, db)
 
     if search:
         search_pattern = f"%{search}%"
@@ -69,14 +74,15 @@ def get_project_statistics(
     current_user: User = Depends(require_roles(["ENERGY_PLANNER", "GIS_ANALYST", "PROJECT_MANAGER", "ADMINISTRATOR"])),
     db: Session = Depends(get_db)
 ):
-    """Retrieve overall project summary metrics and status counts."""
-    total_projects = db.query(Project).count()
-    draft_count = db.query(Project).filter(Project.status == "DRAFT").count()
-    in_review_count = db.query(Project).filter(Project.status == "IN_REVIEW").count()
-    approved_count = db.query(Project).filter(Project.status == "APPROVED").count()
-    archived_count = db.query(Project).filter(Project.status == "ARCHIVED").count()
+    """Retrieve overall project summary metrics and status counts for authorized projects."""
+    query = filter_projects_by_user(db.query(Project), current_user, db)
+    total_projects = query.count()
+    draft_count = query.filter(Project.status == "DRAFT").count()
+    in_review_count = query.filter(Project.status == "IN_REVIEW").count()
+    approved_count = query.filter(Project.status == "APPROVED").count()
+    archived_count = query.filter(Project.status == "ARCHIVED").count()
 
-    total_area_res = db.query(func.sum(Project.land_area)).scalar() or 0.0
+    total_area_res = query.with_entities(func.sum(Project.land_area)).scalar() or 0.0
 
     return ProjectStatsResponse(
         total_projects=total_projects,
@@ -136,7 +142,7 @@ def get_project(
     db: Session = Depends(get_db)
 ):
     """Retrieve details for a specific project by ID."""
-    project = db.query(Project).filter(Project.id == project_id).first()
+    project = get_authorized_project(db, project_id, current_user)
     if not project:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
     return project
@@ -151,7 +157,7 @@ def update_project(
     db: Session = Depends(get_db)
 ):
     """Update project details or status with validation and audit logging."""
-    project = db.query(Project).filter(Project.id == project_id).first()
+    project = get_authorized_project(db, project_id, current_user)
     if not project:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
 
@@ -199,7 +205,7 @@ def delete_project(
     db: Session = Depends(get_db)
 ):
     """Delete or archive a project and record audit log."""
-    project = db.query(Project).filter(Project.id == project_id).first()
+    project = get_authorized_project(db, project_id, current_user)
     if not project:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
 
@@ -229,7 +235,7 @@ def create_site_for_project(
     db: Session = Depends(get_db)
 ):
     """Create a new site linked to project with PostGIS POINT geometry creation."""
-    project = db.query(Project).filter(Project.id == project_id).first()
+    project = get_authorized_project(db, project_id, current_user)
     if not project:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
 
@@ -258,6 +264,7 @@ def create_site_for_project(
         land_ownership=site_in.land_ownership,
         existing_infrastructure=site_in.existing_infrastructure,
         status=site_in.status,
+        created_by=current_user.id,
     )
 
     db.add(site)
@@ -286,6 +293,7 @@ def create_site_for_project(
         land_ownership=site.land_ownership,
         existing_infrastructure=site.existing_infrastructure,
         status=site.status,
+        created_by=site.created_by,
         created_at=site.created_at,
         updated_at=site.updated_at,
     )
@@ -300,7 +308,7 @@ def list_sites_for_project(
     db: Session = Depends(get_db)
 ):
     """List candidate sites linked to a specific project with pagination."""
-    project = db.query(Project).filter(Project.id == project_id).first()
+    project = get_authorized_project(db, project_id, current_user)
     if not project:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
 
@@ -322,6 +330,7 @@ def list_sites_for_project(
             land_ownership=s.land_ownership,
             existing_infrastructure=s.existing_infrastructure,
             status=s.status,
+            created_by=s.created_by,
             created_at=s.created_at,
             updated_at=s.updated_at,
         ))

@@ -326,7 +326,9 @@ def view_platform_stats(
         "total_audit_logs": total_audit_logs,
         "successful_api_requests": total_audit_logs * 14 + 182,
         "failed_api_requests": 3,
-        "zero_ai_policy": "Enforced — 100% Deterministic Physics & PostGIS Math",
+        "platform_policy": "Hybrid Intelligence: Deterministic Engineering Calculations + AI/ML Predictions",
+        "ai_ml_enabled": True,
+        "zero_ai_policy": "Hybrid Architecture (Deterministic Core + Supplemental AI/ML)",
     }
 
 

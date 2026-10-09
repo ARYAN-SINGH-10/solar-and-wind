@@ -4,7 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.user import User
+from app.models.site_comparison import SiteComparison
 from app.api.v1.deps import require_roles
+from app.services.access_control import (
+    get_authorized_site,
+    get_authorized_comparison,
+    filter_comparisons_by_user,
+)
 from app.services.comparison_service import (
     compare_sites_direct,
     create_comparison,
@@ -44,6 +50,10 @@ def compare_candidate_sites(
     if len(payload.site_ids) > 5:
         raise HTTPException(status_code=400, detail="Maximum 5 sites allowed per comparison.")
 
+    # Validate that current user is authorized to access all requested sites
+    for sid in payload.site_ids:
+        get_authorized_site(db, sid, current_user)
+
     site_str_ids = [str(s) for s in payload.site_ids]
     res = compare_sites_direct(db=db, site_ids=site_str_ids)
 
@@ -73,6 +83,10 @@ def create_site_comparison(
     if len(payload.site_ids) > 5:
         raise HTTPException(status_code=400, detail="Maximum 5 sites per comparison.")
 
+    # Validate that current user is authorized to access all requested sites
+    for sid in payload.site_ids:
+        get_authorized_site(db, sid, current_user)
+
     comparison = create_comparison(
         db=db,
         created_by=str(current_user.id),
@@ -91,7 +105,13 @@ def create_site_comparison(
         ip_address=client_ip,
     )
 
-    return comparison
+    return {
+        "id": str(comparison.id),
+        "comparison_name": comparison.comparison_name,
+        "description": comparison.description,
+        "created_by": str(comparison.created_by) if comparison.created_by else None,
+        "created_at": comparison.created_at.isoformat() if comparison.created_at else None,
+    }
 
 
 @router.get("/comparisons")
@@ -99,7 +119,18 @@ def list_site_comparisons(
     current_user: User = Depends(require_roles(["ENERGY_PLANNER", "GIS_ANALYST", "PROJECT_MANAGER", "ADMINISTRATOR"])),
     db: Session = Depends(get_db),
 ):
-    return list_comparisons(db=db)
+    query = filter_comparisons_by_user(db.query(SiteComparison), current_user, db)
+    comparisons = query.order_by(SiteComparison.created_at.desc()).all()
+    return [
+        {
+            "id": str(c.id),
+            "comparison_name": c.comparison_name,
+            "description": c.description,
+            "created_by": str(c.created_by) if c.created_by else None,
+            "created_at": c.created_at.isoformat() if c.created_at else None,
+        }
+        for c in comparisons
+    ]
 
 
 @router.get("/comparisons/{comparison_id}")
@@ -108,6 +139,7 @@ def get_comparison(
     current_user: User = Depends(require_roles(["ENERGY_PLANNER", "GIS_ANALYST", "PROJECT_MANAGER", "ADMINISTRATOR"])),
     db: Session = Depends(get_db),
 ):
+    comp = get_authorized_comparison(db, comparison_id, current_user)
     result = get_comparison_detail(db=db, comparison_id=str(comparison_id))
     if not result:
         raise HTTPException(status_code=404, detail="Comparison not found")
@@ -120,6 +152,7 @@ def delete_site_comparison(
     current_user: User = Depends(require_roles(["ENERGY_PLANNER", "ADMINISTRATOR"])),
     db: Session = Depends(get_db),
 ):
+    comp = get_authorized_comparison(db, comparison_id, current_user)
     success = delete_comparison(db=db, comparison_id=str(comparison_id))
     if not success:
         raise HTTPException(status_code=404, detail="Comparison not found")

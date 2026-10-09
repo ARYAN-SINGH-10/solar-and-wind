@@ -40,6 +40,10 @@ export default function WindAnalysisPage() {
   const [mlError, setMlError] = useState('');
 
   const fetchMLWindPrediction = async (site, numTurb, ratingMw, rDiam) => {
+    if (!site) {
+      setMlResult(null);
+      return;
+    }
     setMlLoading(true);
     setMlError('');
     try {
@@ -48,9 +52,9 @@ export default function WindAnalysisPage() {
         mean_wind_speed: 7.5,
         wind_power_density: 250.0,
         air_density: Number(airDensity),
-        elevation: site ? Number(site.elevation || 650.0) : 650.0,
-        latitude: site ? Number(site.latitude || 23.25) : 23.25,
-        longitude: site ? Number(site.longitude || 77.41) : 77.41,
+        elevation: Number(site.elevation || 650.0),
+        latitude: Number(site.latitude || 23.25),
+        longitude: Number(site.longitude || 77.41),
         rotor_area: rArea,
         turbine_rating_mw: Number(ratingMw),
         num_turbines: Number(numTurb),

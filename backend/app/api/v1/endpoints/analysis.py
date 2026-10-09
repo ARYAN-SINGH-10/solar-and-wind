@@ -13,6 +13,7 @@ from app.api.v1.deps import require_roles
 from app.services.solar_calculation_service import run_and_store_solar_assessment
 from app.services.wind_calculation_service import run_and_store_wind_assessment
 from app.services.audit_service import log_audit_event
+from app.services.access_control import get_authorized_site
 
 router = APIRouter()
 
@@ -42,7 +43,7 @@ def analyze_solar_site(
     current_user: User = Depends(require_roles(["ENERGY_PLANNER", "PROJECT_MANAGER", "ADMINISTRATOR"])),
     db: Session = Depends(get_db)
 ):
-    site = db.query(Site).filter(Site.id == site_id).first()
+    site = get_authorized_site(db, site_id, current_user)
     if not site:
         raise HTTPException(status_code=404, detail="Candidate site not found")
 
@@ -88,7 +89,11 @@ def get_solar_assessments(
     current_user: User = Depends(require_roles(["ENERGY_PLANNER", "GIS_ANALYST", "PROJECT_MANAGER", "ADMINISTRATOR"])),
     db: Session = Depends(get_db)
 ):
-    records = db.query(SolarAssessment).filter(SolarAssessment.site_id == site_id).order_by(SolarAssessment.created_at.desc()).all()
+    site = get_authorized_site(db, site_id, current_user)
+    if not site:
+        raise HTTPException(status_code=404, detail="Candidate site not found")
+
+    records = db.query(SolarAssessment).filter(SolarAssessment.site_id == site.id).order_by(SolarAssessment.created_at.desc()).all()
     return records
 
 
@@ -100,7 +105,7 @@ def analyze_wind_site(
     current_user: User = Depends(require_roles(["ENERGY_PLANNER", "PROJECT_MANAGER", "ADMINISTRATOR"])),
     db: Session = Depends(get_db)
 ):
-    site = db.query(Site).filter(Site.id == site_id).first()
+    site = get_authorized_site(db, site_id, current_user)
     if not site:
         raise HTTPException(status_code=404, detail="Candidate site not found")
 
@@ -147,5 +152,9 @@ def get_wind_assessments(
     current_user: User = Depends(require_roles(["ENERGY_PLANNER", "GIS_ANALYST", "PROJECT_MANAGER", "ADMINISTRATOR"])),
     db: Session = Depends(get_db)
 ):
-    records = db.query(WindAssessment).filter(WindAssessment.site_id == site_id).order_by(WindAssessment.created_at.desc()).all()
+    site = get_authorized_site(db, site_id, current_user)
+    if not site:
+        raise HTTPException(status_code=404, detail="Candidate site not found")
+
+    records = db.query(WindAssessment).filter(WindAssessment.site_id == site.id).order_by(WindAssessment.created_at.desc()).all()
     return records

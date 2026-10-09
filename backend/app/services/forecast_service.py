@@ -104,7 +104,7 @@ def calculate_deterministic_energy_forecast(
             "degradation_rate_pct_yr": degradation_rate_pct_yr,
             "operating_hours_per_year": 8760,
             "calculation_formula": "Monthly Energy = Annual_Base * Seasonality_Weight; Revenue = Energy * Tariff",
-            "disclaimer": "Calculated mathematical estimates. Zero-AI deterministic physics model.",
+            "disclaimer": "Calculated mathematical estimates produced by the authoritative deterministic physics model.",
         }
     }
 

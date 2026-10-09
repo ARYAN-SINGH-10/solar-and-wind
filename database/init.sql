@@ -85,11 +85,13 @@ CREATE TABLE IF NOT EXISTS sites (
     land_ownership VARCHAR(255), -- Public, Private, Lease
     existing_infrastructure TEXT,
     status VARCHAR(50) DEFAULT 'PROPOSED', -- Workflow: CREATED, DATA_PENDING, DATA_COLLECTED, ANALYZED, SUITABILITY_CALCULATED, SCORED, FORECASTED, OPTIMIZED, RECOMMENDATION_READY, REPORT_GENERATED | Administrative: PROPOSED, EVALUATING, APPROVED, REJECTED, ARCHIVED
+    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_sites_project_id ON sites(project_id);
+CREATE INDEX IF NOT EXISTS idx_sites_created_by ON sites(created_by);
 CREATE INDEX IF NOT EXISTS idx_sites_location ON sites USING GIST (location);
 
 -- -------------------------------------------------------------------

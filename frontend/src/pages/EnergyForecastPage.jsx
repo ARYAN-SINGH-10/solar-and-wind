@@ -82,9 +82,11 @@ export default function EnergyForecastPage() {
           capacity: capacityMw
         });
         setForecastResult(fc);
+        fetchMLForecast(capacityMw, targetMonth);
+      } else {
+        setForecastResult(null);
+        setMlResult(null);
       }
-
-      fetchMLForecast(capacityMw, targetMonth);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to load energy forecast.');
     } finally {

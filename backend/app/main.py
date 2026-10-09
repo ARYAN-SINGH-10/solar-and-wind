@@ -64,8 +64,38 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 def startup_db_client():
     logger.info("Initializing database tables if not created...")
     try:
+        from sqlalchemy import text
+        from sqlalchemy.orm import Session
+        from app.models.role import Role
+
+        # 1. Enable PostGIS & UUID extensions if supported
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis;"))
+                conn.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'))
+                conn.commit()
+                logger.info("PostGIS and uuid-ossp extensions checked/enabled.")
+        except Exception as ext_err:
+            logger.warning(f"Note on extensions check: {ext_err}")
+
+        # 2. Create tables
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables initialized successfully.")
+
+        # 3. Seed default RBAC roles if empty
+        with Session(engine) as session:
+            existing_roles = session.query(Role).count()
+            if existing_roles == 0:
+                logger.info("Seeding initial RBAC roles...")
+                roles = [
+                    Role(id=1, role_name="ENERGY_PLANNER", description="Responsible for solar/wind resource modeling, yield forecasting, and site scoring."),
+                    Role(id=2, role_name="GIS_ANALYST", description="Responsible for spatial layer ingestion, polygon boundary digitizing, and terrain slope analysis."),
+                    Role(id=3, role_name="PROJECT_MANAGER", description="Responsible for renewable energy project lifecycle management, site approvals, and reporting."),
+                    Role(id=4, role_name="ADMINISTRATOR", description="System administrative access, user RBAC management, and global weight configurations."),
+                ]
+                session.add_all(roles)
+                session.commit()
+                logger.info("Initial RBAC roles seeded successfully.")
     except Exception as e:
         logger.error(f"Error during DB startup initialization: {e}")
 
@@ -77,5 +107,15 @@ def root():
         "status": "online",
         "docs_url": "/docs",
         "health_check": f"{settings.API_V1_STR}/health",
-        "policy": "100% Deterministic Engineering Math (Zero AI/ML)",
+        "policy": "Hybrid Intelligence: Deterministic Engineering Calculations + AI/ML Predictions",
+        "ai_ml_enabled": True,
+        "ai_ml_capabilities": [
+            "Solar Energy Prediction",
+            "Wind Energy Prediction",
+            "Site Suitability Classification",
+            "Energy Generation Forecasting",
+            "Investment Payback Prediction",
+            "Investment Risk Classification",
+            "Technology Recommendation",
+        ],
     }

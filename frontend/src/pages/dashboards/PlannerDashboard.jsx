@@ -49,7 +49,7 @@ export default function PlannerDashboard() {
         </div>
         <div className="flex items-center space-x-2 text-xs text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 font-medium">
           <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          <span>Zero AI / Pure Physics Formulas</span>
+          <span>Authoritative Physics + AI/ML Insights</span>
         </div>
       </div>
 
@@ -64,7 +64,7 @@ export default function PlannerDashboard() {
         <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-1">
           <span className="text-xs text-slate-500 font-medium">Est. Portfolio Investment</span>
           <p className="text-3xl font-black text-sky-700 font-mono">
-            ${(plannerData.total_investment_usd / 1000000 || 49).toFixed(1)}M
+            ${((plannerData.total_investment_usd || 0) / 1000000).toFixed(1)}M
           </p>
           <p className="text-[11px] text-slate-400 font-mono">CAPEX Estimate</p>
         </div>
@@ -72,7 +72,7 @@ export default function PlannerDashboard() {
         <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-1">
           <span className="text-xs text-slate-500 font-medium">Est. Annual Revenue</span>
           <p className="text-3xl font-black text-emerald-600 font-mono">
-            ${(plannerData.total_revenue_usd / 1000000 || 4.8).toFixed(1)}M/yr
+            ${((plannerData.total_revenue_usd || 0) / 1000000).toFixed(1)}M/yr
           </p>
           <p className="text-[11px] text-emerald-600 font-mono font-medium">Tariff Revenue</p>
         </div>

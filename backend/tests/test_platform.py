@@ -158,7 +158,11 @@ class PlatformTests(unittest.TestCase):
     def test_api_root(self):
         response = client.get("/")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["status"], "online")
+        data = response.json()
+        self.assertEqual(data["status"], "online")
+        self.assertEqual(data["policy"], "Hybrid Intelligence: Deterministic Engineering Calculations + AI/ML Predictions")
+        self.assertTrue(data.get("ai_ml_enabled"))
+        self.assertEqual(len(data.get("ai_ml_capabilities", [])), 7)
 
     def test_invalid_jwt_authentication(self):
         headers = {"Authorization": "Bearer invalid_jwt_token_12345"}

@@ -19,6 +19,7 @@ from app.services.osm_service import calculate_infrastructure_spatial_distances
 from app.services.data_source_service import DataSourceRegistry
 from app.services.audit_service import log_audit_event
 from app.services.notification_service import trigger_environmental_change_notification
+from app.services.access_control import get_authorized_site
 
 router = APIRouter()
 
@@ -61,7 +62,7 @@ async def fetch_external_environmental_data(
     Triggers external API retrieval (NASA POWER & Open-Meteo APIs) for site coordinates.
     Updates workflow status to DATA_COLLECTED.
     """
-    site = db.query(Site).filter(Site.id == site_id).first()
+    site = get_authorized_site(db, site_id, current_user)
     if not site:
         raise HTTPException(status_code=404, detail="Candidate site not found")
 
@@ -115,7 +116,11 @@ def get_site_environmental_data(
     current_user: User = Depends(require_roles(["ENERGY_PLANNER", "GIS_ANALYST", "PROJECT_MANAGER", "ADMINISTRATOR"])),
     db: Session = Depends(get_db)
 ):
-    records = db.query(EnvironmentalData).filter(EnvironmentalData.site_id == site_id).order_by(EnvironmentalData.created_at.desc()).all()
+    site = get_authorized_site(db, site_id, current_user)
+    if not site:
+        raise HTTPException(status_code=404, detail="Candidate site not found")
+
+    records = db.query(EnvironmentalData).filter(EnvironmentalData.site_id == site.id).order_by(EnvironmentalData.created_at.desc()).all()
     return records
 
 
@@ -127,7 +132,7 @@ def submit_manual_environmental_data(
     current_user: User = Depends(require_roles(["ENERGY_PLANNER", "GIS_ANALYST", "ADMINISTRATOR"])),
     db: Session = Depends(get_db)
 ):
-    site = db.query(Site).filter(Site.id == site_id).first()
+    site = get_authorized_site(db, site_id, current_user)
     if not site:
         raise HTTPException(status_code=404, detail="Candidate site not found")
 
@@ -155,7 +160,7 @@ async def analyze_site_gis_data(
     current_user: User = Depends(require_roles(["GIS_ANALYST", "ENERGY_PLANNER", "ADMINISTRATOR"])),
     db: Session = Depends(get_db)
 ):
-    site = db.query(Site).filter(Site.id == site_id).first()
+    site = get_authorized_site(db, site_id, current_user)
     if not site:
         raise HTTPException(status_code=404, detail="Candidate site not found")
 
@@ -191,7 +196,11 @@ def get_site_gis_data(
     current_user: User = Depends(require_roles(["GIS_ANALYST", "ENERGY_PLANNER", "PROJECT_MANAGER", "ADMINISTRATOR"])),
     db: Session = Depends(get_db)
 ):
-    records = db.query(GeographicData).filter(GeographicData.site_id == site_id).all()
+    site = get_authorized_site(db, site_id, current_user)
+    if not site:
+        raise HTTPException(status_code=404, detail="Candidate site not found")
+
+    records = db.query(GeographicData).filter(GeographicData.site_id == site.id).all()
     return records
 
 
@@ -201,11 +210,11 @@ def get_site_infrastructure_data(
     current_user: User = Depends(require_roles(["GIS_ANALYST", "ENERGY_PLANNER", "PROJECT_MANAGER", "ADMINISTRATOR"])),
     db: Session = Depends(get_db)
 ):
-    site = db.query(Site).filter(Site.id == site_id).first()
+    site = get_authorized_site(db, site_id, current_user)
     if not site:
         raise HTTPException(status_code=404, detail="Candidate site not found")
 
-    records = db.query(InfrastructureData).filter(InfrastructureData.site_id == site_id).all()
+    records = db.query(InfrastructureData).filter(InfrastructureData.site_id == site.id).all()
     if not records:
         infra_record = calculate_infrastructure_spatial_distances(
             db=db, site_id=str(site_id), latitude=float(site.latitude), longitude=float(site.longitude)

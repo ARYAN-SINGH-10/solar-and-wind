@@ -4,6 +4,8 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 from app.core.config import settings
 
 db_uri = settings.SQLALCHEMY_DATABASE_URI
+if db_uri and db_uri.startswith("postgresql://"):
+    db_uri = db_uri.replace("postgresql://", "postgresql+psycopg2://", 1)
 try:
     engine = create_engine(
         db_uri,
@@ -11,7 +13,9 @@ try:
         pool_size=10,
         max_overflow=20,
     )
-except Exception:
+except Exception as e:
+    import logging
+    logging.getLogger(__name__).warning(f"Database connection error: {e}. Falling back to SQLite.")
     from sqlalchemy.pool import StaticPool
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
 

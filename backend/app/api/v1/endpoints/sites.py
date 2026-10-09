@@ -10,6 +10,11 @@ from app.models.user import User
 from app.schemas.site import SiteCreate, SiteResponse, SiteUpdate, PaginatedSiteResponse
 from app.api.v1.deps import require_roles
 from app.services.audit_service import log_audit_event
+from app.services.access_control import (
+    filter_sites_by_user,
+    get_authorized_site,
+    get_authorized_project
+)
 
 router = APIRouter()
 
@@ -22,6 +27,19 @@ def create_site_direct(
     db: Session = Depends(get_db)
 ):
     """Create candidate site directly with PostGIS POINT geometry."""
+    if not site_in.project_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="project_id is required to create a candidate site."
+        )
+
+    project = get_authorized_project(db, site_in.project_id, current_user)
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Project with ID '{site_in.project_id}' not found or unauthorized."
+        )
+
     if not (-90.0 <= site_in.latitude <= 90.0):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -41,12 +59,13 @@ def create_site_direct(
         latitude=site_in.latitude,
         longitude=site_in.longitude,
         location=location_geom,
-        region=site_in.region,
+        region=site_in.region or project.region,
         land_area=site_in.land_area,
         elevation=site_in.elevation,
         land_ownership=site_in.land_ownership,
         existing_infrastructure=site_in.existing_infrastructure,
         status=site_in.status,
+        created_by=current_user.id,
     )
     db.add(site)
     db.commit()
@@ -74,6 +93,7 @@ def create_site_direct(
         land_ownership=site.land_ownership,
         existing_infrastructure=site.existing_infrastructure,
         status=site.status,
+        created_by=site.created_by,
         created_at=site.created_at,
         updated_at=site.updated_at,
     )
@@ -90,9 +110,12 @@ def list_all_sites(
     db: Session = Depends(get_db)
 ):
     """List, search, and filter candidate sites with pagination."""
-    query = db.query(Site)
+    query = filter_sites_by_user(db.query(Site), current_user, db)
 
     if project_id:
+        project = get_authorized_project(db, project_id, current_user)
+        if not project:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
         query = query.filter(Site.project_id == project_id)
 
     if search:
@@ -125,6 +148,7 @@ def list_all_sites(
             land_ownership=s.land_ownership,
             existing_infrastructure=s.existing_infrastructure,
             status=s.status,
+            created_by=s.created_by,
             created_at=s.created_at,
             updated_at=s.updated_at,
         ))
@@ -144,7 +168,7 @@ def get_site(
     db: Session = Depends(get_db)
 ):
     """Retrieve details for a specific candidate site by ID."""
-    site = db.query(Site).filter(Site.id == site_id).first()
+    site = get_authorized_site(db, site_id, current_user)
     if not site:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Site not found")
 
@@ -160,6 +184,7 @@ def get_site(
         land_ownership=site.land_ownership,
         existing_infrastructure=site.existing_infrastructure,
         status=site.status,
+        created_by=site.created_by,
         created_at=site.created_at,
         updated_at=site.updated_at,
     )
@@ -174,7 +199,7 @@ def update_site(
     db: Session = Depends(get_db)
 ):
     """Update candidate site details and update PostGIS POINT geometry."""
-    site = db.query(Site).filter(Site.id == site_id).first()
+    site = get_authorized_site(db, site_id, current_user)
     if not site:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Site not found")
 
@@ -237,6 +262,7 @@ def update_site(
         land_ownership=site.land_ownership,
         existing_infrastructure=site.existing_infrastructure,
         status=site.status,
+        created_by=site.created_by,
         created_at=site.created_at,
         updated_at=site.updated_at,
     )
@@ -250,7 +276,7 @@ def delete_site(
     db: Session = Depends(get_db)
 ):
     """Delete candidate site and record audit log."""
-    site = db.query(Site).filter(Site.id == site_id).first()
+    site = get_authorized_site(db, site_id, current_user)
     if not site:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Site not found")
 

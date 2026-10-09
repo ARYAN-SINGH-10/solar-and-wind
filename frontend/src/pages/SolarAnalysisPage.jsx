@@ -39,6 +39,10 @@ export default function SolarAnalysisPage() {
   const [mlError, setMlError] = useState('');
 
   const fetchMLPrediction = async (site, capMw) => {
+    if (!site) {
+      setMlResult(null);
+      return;
+    }
     setMlLoading(true);
     setMlError('');
     try {
@@ -46,10 +50,10 @@ export default function SolarAnalysisPage() {
         ghi: 2150.0,
         dni: 2300.0,
         temperature: 22.5,
-        elevation: site ? Number(site.elevation || 650.0) : 650.0,
-        slope: site ? Number(site.slope || 2.5) : 2.5,
-        latitude: site ? Number(site.latitude || 23.25) : 23.25,
-        longitude: site ? Number(site.longitude || 77.41) : 77.41,
+        elevation: Number(site.elevation || 650.0),
+        slope: Number(site.slope || 2.5),
+        latitude: Number(site.latitude || 23.25),
+        longitude: Number(site.longitude || 77.41),
         installed_capacity_mw: Number(capMw),
       });
       setMlResult(res);

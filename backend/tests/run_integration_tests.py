@@ -17,7 +17,23 @@ class IntegrationTests(unittest.TestCase):
     def test_01_api_root(self):
         res = client.get("/")
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(res.json()["status"], "online")
+        data = res.json()
+        self.assertEqual(data["status"], "online")
+        self.assertEqual(data["title"], "Solar & Wind Deployment Intelligence Platform")
+        self.assertEqual(data["docs_url"], "/docs")
+        self.assertEqual(data["health_check"], "/api/v1/health")
+        self.assertEqual(data["policy"], "Hybrid Intelligence: Deterministic Engineering Calculations + AI/ML Predictions")
+        self.assertTrue(data.get("ai_ml_enabled"))
+        expected_capabilities = [
+            "Solar Energy Prediction",
+            "Wind Energy Prediction",
+            "Site Suitability Classification",
+            "Energy Generation Forecasting",
+            "Investment Payback Prediction",
+            "Investment Risk Classification",
+            "Technology Recommendation",
+        ]
+        self.assertEqual(data.get("ai_ml_capabilities"), expected_capabilities)
 
     def test_02_health_endpoint(self):
         res = client.get("/api/v1/health")
@@ -25,6 +41,12 @@ class IntegrationTests(unittest.TestCase):
         data = res.json()
         self.assertIn("status", data)
         self.assertIn(data["status"], ["ok", "degraded"])
+        self.assertIn("deterministic_engines", data)
+        engines = data["deterministic_engines"]
+        self.assertEqual(engines.get("solar_engine"), "operational")
+        self.assertEqual(engines.get("wind_engine"), "operational")
+        self.assertTrue(engines.get("ai_ml_model_active"))
+        self.assertEqual(engines.get("mode"), "hybrid_deterministic_and_ml")
 
     def test_03_unauthorized_access(self):
         res = client.get("/api/v1/projects")

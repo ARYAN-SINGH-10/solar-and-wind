@@ -15,6 +15,7 @@ from app.services.suitability_service import (
     compute_composite_site_score
 )
 from app.services.audit_service import log_audit_event
+from app.services.access_control import get_authorized_site
 
 router = APIRouter()
 
@@ -34,7 +35,7 @@ def calculate_site_suitability(
     current_user: User = Depends(require_roles(["ENERGY_PLANNER", "PROJECT_MANAGER", "ADMINISTRATOR"])),
     db: Session = Depends(get_db)
 ):
-    site = db.query(Site).filter(Site.id == site_id).first()
+    site = get_authorized_site(db, site_id, current_user)
     if not site:
         raise HTTPException(status_code=404, detail="Candidate site not found")
 
@@ -85,7 +86,11 @@ def get_site_suitability_history(
     current_user: User = Depends(require_roles(["ENERGY_PLANNER", "GIS_ANALYST", "PROJECT_MANAGER", "ADMINISTRATOR"])),
     db: Session = Depends(get_db)
 ):
-    records = db.query(SiteSuitability).filter(SiteSuitability.site_id == site_id).order_by(SiteSuitability.created_at.desc()).all()
+    site = get_authorized_site(db, site_id, current_user)
+    if not site:
+        raise HTTPException(status_code=404, detail="Candidate site not found")
+
+    records = db.query(SiteSuitability).filter(SiteSuitability.site_id == site.id).order_by(SiteSuitability.created_at.desc()).all()
     return records
 
 
@@ -97,7 +102,7 @@ def calculate_custom_site_score(
     current_user: User = Depends(require_roles(["ENERGY_PLANNER", "PROJECT_MANAGER", "ADMINISTRATOR"])),
     db: Session = Depends(get_db)
 ):
-    site = db.query(Site).filter(Site.id == site_id).first()
+    site = get_authorized_site(db, site_id, current_user)
     if not site:
         raise HTTPException(status_code=404, detail="Candidate site not found")
 
@@ -151,5 +156,9 @@ def get_site_score_history(
     current_user: User = Depends(require_roles(["ENERGY_PLANNER", "GIS_ANALYST", "PROJECT_MANAGER", "ADMINISTRATOR"])),
     db: Session = Depends(get_db)
 ):
-    records = db.query(SiteScore).filter(SiteScore.site_id == site_id).order_by(SiteScore.created_at.desc()).all()
+    site = get_authorized_site(db, site_id, current_user)
+    if not site:
+        raise HTTPException(status_code=404, detail="Candidate site not found")
+
+    records = db.query(SiteScore).filter(SiteScore.site_id == site.id).order_by(SiteScore.created_at.desc()).all()
     return records

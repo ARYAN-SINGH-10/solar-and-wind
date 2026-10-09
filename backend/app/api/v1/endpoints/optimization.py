@@ -11,6 +11,7 @@ from app.models.energy_forecast import EnergyForecast
 from app.models.deployment_optimization import DeploymentOptimization
 from app.models.recommendation import Recommendation
 from app.api.v1.deps import require_roles
+from app.services.access_control import get_authorized_site
 from app.services.optimization_service import run_and_store_deployment_optimization
 from app.services.recommendation_service import run_and_store_recommendation
 from app.services.suitability_service import run_and_store_suitability_and_scoring
@@ -27,9 +28,7 @@ def run_site_optimization(
     current_user: User = Depends(require_roles(["ENERGY_PLANNER", "PROJECT_MANAGER", "ADMINISTRATOR"])),
     db: Session = Depends(get_db)
 ):
-    site = db.query(Site).filter(Site.id == site_id).first()
-    if not site:
-        raise HTTPException(status_code=404, detail="Candidate site not found")
+    site = get_authorized_site(db, site_id, current_user)
 
     # Prerequisite Auto-Calculation: Ensure site suitability exists
     import uuid as _uuid
@@ -71,6 +70,7 @@ def get_site_optimizations(
     current_user: User = Depends(require_roles(["ENERGY_PLANNER", "GIS_ANALYST", "PROJECT_MANAGER", "ADMINISTRATOR"])),
     db: Session = Depends(get_db)
 ):
+    site = get_authorized_site(db, site_id, current_user)
     records = db.query(DeploymentOptimization).filter(DeploymentOptimization.site_id == site_id).order_by(DeploymentOptimization.created_at.desc()).all()
     return records
 
@@ -82,9 +82,7 @@ def generate_site_recommendation(
     current_user: User = Depends(require_roles(["ENERGY_PLANNER", "PROJECT_MANAGER", "ADMINISTRATOR"])),
     db: Session = Depends(get_db)
 ):
-    site = db.query(Site).filter(Site.id == site_id).first()
-    if not site:
-        raise HTTPException(status_code=404, detail="Candidate site not found")
+    site = get_authorized_site(db, site_id, current_user)
 
     # Prerequisite Auto-Calculation: Ensure site suitability and energy forecast exist
     import uuid as _uuid
@@ -133,5 +131,6 @@ def get_site_recommendations(
     current_user: User = Depends(require_roles(["ENERGY_PLANNER", "GIS_ANALYST", "PROJECT_MANAGER", "ADMINISTRATOR"])),
     db: Session = Depends(get_db)
 ):
+    site = get_authorized_site(db, site_id, current_user)
     records = db.query(Recommendation).filter(Recommendation.site_id == site_id).order_by(Recommendation.created_at.desc()).all()
     return records

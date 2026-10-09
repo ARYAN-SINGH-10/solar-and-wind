@@ -108,7 +108,7 @@ export default function NotificationsPage() {
             <span>Notification & Event Alert System</span>
           </h1>
           <p className="text-xs text-slate-500 font-medium mt-1">
-            Predefined rule-based alerts for weather events, suitability shifts, environmental risk, forecast updates, & project milestone changes. Zero AI generated text!
+            Structured rule-based alerts for weather events, suitability shifts, environmental risk, forecast updates, & project milestone changes.
           </p>
         </div>
         <div className="flex items-center gap-2">

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getSitesApi } from '../services/siteService';
-import { generateRecommendationApi, getRecommendationApi } from '../services/analysisService';
+import { generateRecommendationApi, getRecommendationApi, getSiteSuitabilityApi, getSiteEnvDataApi } from '../services/analysisService';
 import { predictInvestmentML, recommendTechnologyML } from '../services/mlService';
 import Card from '../components/common/Card';
 import Badge from '../components/common/Badge';
@@ -46,7 +46,40 @@ export default function RecommendationPage() {
   const [techMlLoading, setTechMlLoading] = useState(false);
   const [techMlError, setTechMlError] = useState('');
 
-  const fetchMLIntelligence = async (rec) => {
+  const fetchMLIntelligence = async (rec, targetSiteId) => {
+    // Dynamically retrieve prerequisite suitability & environmental metrics if available
+    let suitabilityScore = 82.0;
+    let ghi = 2150.0;
+    let windSpeed = 7.5;
+    let infraScore = 75.0;
+    let envScore = 85.0;
+
+    const sId = targetSiteId || selectedSiteId;
+    if (sId) {
+      try {
+        const suitabilityData = await getSiteSuitabilityApi(sId);
+        const latestSuit = Array.isArray(suitabilityData) && suitabilityData.length > 0 ? suitabilityData[0] : suitabilityData;
+        if (latestSuit) {
+          if (latestSuit.overall_score) suitabilityScore = Number(latestSuit.overall_score);
+          if (latestSuit.infrastructure_score) infraScore = Number(latestSuit.infrastructure_score);
+          if (latestSuit.environmental_score) envScore = Number(latestSuit.environmental_score);
+        }
+      } catch {
+        // Silently fallback if not created yet
+      }
+
+      try {
+        const envData = await getSiteEnvDataApi(sId);
+        const latestEnv = Array.isArray(envData) && envData.length > 0 ? envData[0] : envData;
+        if (latestEnv) {
+          if (latestEnv.solar_irradiance) ghi = Number(latestEnv.solar_irradiance);
+          if (latestEnv.wind_speed) windSpeed = Number(latestEnv.wind_speed);
+        }
+      } catch {
+        // Silently fallback if not created yet
+      }
+    }
+
     // Investment ML
     setInvMlLoading(true);
     setInvMlError('');
@@ -60,7 +93,7 @@ export default function RecommendationPage() {
         electricity_tariff_usd_mwh: 65.0,
         technology: rec ? String(rec.technology || 'HYBRID') : 'HYBRID',
         capacity_factor_pct: 28.5,
-        site_suitability_score: 82.0,
+        site_suitability_score: suitabilityScore,
       });
       setInvMlResult(invRes);
     } catch (err) {
@@ -74,16 +107,16 @@ export default function RecommendationPage() {
     setTechMlError('');
     try {
       const techRes = await recommendTechnologyML({
-        ghi: 2150.0,
-        wind_speed: 7.5,
+        ghi: ghi,
+        wind_speed: windSpeed,
         wind_power_density: 250.0,
-        suitability_score: 82.0,
+        suitability_score: suitabilityScore,
         solar_generation_mwh: 18000.0,
         wind_generation_mwh: 14000.0,
         revenue_usd: rec ? Number(rec.expected_revenue || 2080000.0) : 2080000.0,
         capacity_factor_pct: 30.0,
-        infrastructure_score: 75.0,
-        environmental_score: 85.0,
+        infrastructure_score: infraScore,
+        environmental_score: envScore,
       });
       setTechMlResult(techRes);
     } catch (err) {
@@ -110,7 +143,7 @@ export default function RecommendationPage() {
       const records = await getRecommendationApi(siteId);
       const recArr = Array.isArray(records) ? records : [];
       setRecRecords(recArr);
-      fetchMLIntelligence(recArr.length > 0 ? recArr[0] : null);
+      fetchMLIntelligence(recArr.length > 0 ? recArr[0] : null, siteId);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to load recommendation records.');
       setRecRecords([]);
@@ -151,7 +184,7 @@ export default function RecommendationPage() {
 
     try {
       await generateRecommendationApi(selectedSiteId);
-      setSuccessMsg('Successfully executed rule-based technology selection and CAPEX feasibility model.');
+      setSuccessMsg('Successfully executed technology selection and CAPEX feasibility model with auto-calculated site suitability and energy forecast.');
       await loadRecommendations(selectedSiteId);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to generate recommendation.');

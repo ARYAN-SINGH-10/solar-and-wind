@@ -13,6 +13,8 @@ from app.models.recommendation import Recommendation
 from app.api.v1.deps import require_roles
 from app.services.optimization_service import run_and_store_deployment_optimization
 from app.services.recommendation_service import run_and_store_recommendation
+from app.services.suitability_service import run_and_store_suitability_and_scoring
+from app.services.forecast_service import run_and_store_energy_forecast
 from app.services.audit_service import log_audit_event
 
 router = APIRouter()
@@ -29,16 +31,13 @@ def run_site_optimization(
     if not site:
         raise HTTPException(status_code=404, detail="Candidate site not found")
 
-    # Prerequisite Guardrail
+    # Prerequisite Auto-Calculation: Ensure site suitability exists
     import uuid as _uuid
     sid = site_id if not isinstance(site_id, str) else _uuid.UUID(str(site_id))
     suitability_exists = db.query(SiteSuitability).filter(SiteSuitability.site_id == sid).first()
     score_exists = db.query(SiteScore).filter(SiteScore.site_id == sid).first()
     if not suitability_exists and not score_exists:
-        raise HTTPException(
-            status_code=400,
-            detail="Cannot run optimization: Site suitability score must be calculated first."
-        )
+        run_and_store_suitability_and_scoring(db=db, site_id=str(site_id))
 
     opt_rec = run_and_store_deployment_optimization(db=db, site_id=str(site_id))
     site.status = "OPTIMIZED"
@@ -87,18 +86,18 @@ def generate_site_recommendation(
     if not site:
         raise HTTPException(status_code=404, detail="Candidate site not found")
 
-    # Prerequisite Guardrail: Site suitability and energy forecast must be calculated first
+    # Prerequisite Auto-Calculation: Ensure site suitability and energy forecast exist
     import uuid as _uuid
     sid2 = site_id if not isinstance(site_id, str) else _uuid.UUID(str(site_id))
     suitability_exists = db.query(SiteSuitability).filter(SiteSuitability.site_id == sid2).first()
     score_exists = db.query(SiteScore).filter(SiteScore.site_id == sid2).first()
     forecast_exists = db.query(EnergyForecast).filter(EnergyForecast.site_id == sid2).first()
 
-    if (not suitability_exists and not score_exists) or not forecast_exists:
-        raise HTTPException(
-            status_code=400,
-            detail="Cannot generate recommendation: Site suitability and energy forecast must be calculated first."
-        )
+    if not suitability_exists and not score_exists:
+        run_and_store_suitability_and_scoring(db=db, site_id=str(site_id))
+
+    if not forecast_exists:
+        run_and_store_energy_forecast(db=db, site_id=str(site_id))
 
     rec = run_and_store_recommendation(db=db, site_id=str(site_id))
     site.status = "RECOMMENDATION_READY"

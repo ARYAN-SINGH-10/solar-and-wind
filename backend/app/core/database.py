@@ -3,7 +3,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 from app.core.config import settings
 
-db_uri = settings.get_db_uri()
+db_uri = settings.get_db_uri().strip()
 if db_uri.startswith("postgres://"):
     db_uri = db_uri.replace("postgres://", "postgresql+psycopg2://", 1)
 elif db_uri.startswith("postgresql://") and not db_uri.startswith("postgresql+psycopg2://"):

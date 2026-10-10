@@ -25,18 +25,20 @@ class Settings(BaseSettings):
     @classmethod
     def fix_db_scheme(cls, v: Optional[str]) -> Optional[str]:
         if isinstance(v, str) and v:
-            if v.startswith("postgres://"):
-                return v.replace("postgres://", "postgresql+psycopg2://", 1)
-            elif v.startswith("postgresql://"):
-                return v.replace("postgresql://", "postgresql+psycopg2://", 1)
+            clean = v.strip()
+            if clean.startswith("postgres://"):
+                return clean.replace("postgres://", "postgresql+psycopg2://", 1)
+            elif clean.startswith("postgresql://"):
+                return clean.replace("postgresql://", "postgresql+psycopg2://", 1)
+            return clean
         return v
 
     def get_db_uri(self) -> str:
         """Return the effective database URI, preferring DATABASE_URL over individual params."""
         if self.DATABASE_URL:
-            return self.DATABASE_URL
+            return self.DATABASE_URL.strip()
         if self.SQLALCHEMY_DATABASE_URI:
-            return self.SQLALCHEMY_DATABASE_URI
+            return self.SQLALCHEMY_DATABASE_URI.strip()
         return (
             f"postgresql+psycopg2://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
             f"@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"

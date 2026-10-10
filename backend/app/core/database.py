@@ -3,18 +3,18 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 from app.core.config import settings
 
-db_uri = settings.SQLALCHEMY_DATABASE_URI
-if db_uri:
-    if db_uri.startswith("postgres://"):
-        db_uri = db_uri.replace("postgres://", "postgresql+psycopg2://", 1)
-    elif db_uri.startswith("postgresql://"):
-        db_uri = db_uri.replace("postgresql://", "postgresql+psycopg2://", 1)
+db_uri = settings.get_db_uri()
+if db_uri.startswith("postgres://"):
+    db_uri = db_uri.replace("postgres://", "postgresql+psycopg2://", 1)
+elif db_uri.startswith("postgresql://") and not db_uri.startswith("postgresql+psycopg2://"):
+    db_uri = db_uri.replace("postgresql://", "postgresql+psycopg2://", 1)
+
 try:
     engine = create_engine(
         db_uri,
         pool_pre_ping=True,
-        pool_size=10,
-        max_overflow=20,
+        pool_size=5,
+        max_overflow=10,
     )
 except Exception as e:
     import logging

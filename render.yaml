@@ -22,7 +22,7 @@ services:
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: "10080"
       - key: BACKEND_CORS_ORIGINS
-        value: "*"
+        value: '["*"]'
 
   # ==============================================================================
   # 2. Frontend Web Service (React Vite Production Static Site)

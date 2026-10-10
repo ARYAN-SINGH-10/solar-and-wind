@@ -1,6 +1,7 @@
 import os
-from typing import List, Union
-from pydantic import AnyHttpUrl, validator
+import json
+from typing import List, Optional, Union
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -11,31 +12,43 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
 
-    POSTGRES_SERVER: str = os.getenv("POSTGRES_SERVER", "localhost")
-    POSTGRES_PORT: str = os.getenv("POSTGRES_PORT", "5432")
-    POSTGRES_USER: str = os.getenv("POSTGRES_USER", "postgres")
-    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "postgres")
-    POSTGRES_DB: str = os.getenv("POSTGRES_DB", "solar_wind_db")
-    
-    SQLALCHEMY_DATABASE_URI: Union[str, None] = os.getenv("DATABASE_URL") or os.getenv("SQLALCHEMY_DATABASE_URI")
+    POSTGRES_SERVER: str = "localhost"
+    POSTGRES_PORT: str = "5432"
+    POSTGRES_USER: str = "postgres"
+    POSTGRES_PASSWORD: str = "postgres"
+    POSTGRES_DB: str = "solar_wind_db"
 
-    @validator("SQLALCHEMY_DATABASE_URI", pre=True)
-    def assemble_db_connection(cls, v: Union[str, None], values: dict) -> str:
+    DATABASE_URL: Optional[str] = None
+    SQLALCHEMY_DATABASE_URI: Optional[str] = None
+
+    @field_validator("DATABASE_URL", "SQLALCHEMY_DATABASE_URI", mode="before")
+    @classmethod
+    def fix_db_scheme(cls, v: Optional[str]) -> Optional[str]:
         if isinstance(v, str) and v:
             if v.startswith("postgres://"):
                 return v.replace("postgres://", "postgresql+psycopg2://", 1)
             elif v.startswith("postgresql://"):
                 return v.replace("postgresql://", "postgresql+psycopg2://", 1)
-            return v
-        return f"postgresql+psycopg2://{values.get('POSTGRES_USER')}:{values.get('POSTGRES_PASSWORD')}@{values.get('POSTGRES_SERVER')}:{values.get('POSTGRES_PORT')}/{values.get('POSTGRES_DB')}"
+        return v
+
+    def get_db_uri(self) -> str:
+        """Return the effective database URI, preferring DATABASE_URL over individual params."""
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
+        if self.SQLALCHEMY_DATABASE_URI:
+            return self.SQLALCHEMY_DATABASE_URI
+        return (
+            f"postgresql+psycopg2://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
+            f"@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        )
 
     # External Data Source API Endpoints
-    NASA_POWER_API_URL: str = os.getenv("NASA_POWER_API_URL", "https://power.larc.nasa.gov/api/temporal/daily/point")
-    OPEN_METEO_API_URL: str = os.getenv("OPEN_METEO_API_URL", "https://api.open-meteo.com/v1/forecast")
-    OPEN_METEO_ELEVATION_API_URL: str = os.getenv("OPEN_METEO_ELEVATION_API_URL", "https://api.open-meteo.com/v1/elevation")
-    OVERPASS_API_URL: str = os.getenv("OVERPASS_API_URL", "https://overpass-api.de/api/interpreter")
+    NASA_POWER_API_URL: str = "https://power.larc.nasa.gov/api/temporal/daily/point"
+    OPEN_METEO_API_URL: str = "https://api.open-meteo.com/v1/forecast"
+    OPEN_METEO_ELEVATION_API_URL: str = "https://api.open-meteo.com/v1/elevation"
+    OVERPASS_API_URL: str = "https://overpass-api.de/api/interpreter"
 
-    BACKEND_CORS_ORIGINS: List[str] = [
+    BACKEND_CORS_ORIGINS: Union[str, List[str]] = [
         "http://localhost:5173",
         "http://localhost:3000",
         "http://localhost:8000",
@@ -43,29 +56,30 @@ class Settings(BaseSettings):
         "http://127.0.0.1:8000",
     ]
 
-    @validator("BACKEND_CORS_ORIGINS", pre=True)
+    @field_validator("BACKEND_CORS_ORIGINS", mode="after")
+    @classmethod
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
+        if isinstance(v, list):
+            return [str(x) for x in v]
         if isinstance(v, str):
-            if v.startswith("[") and v.endswith("]"):
-                import json
+            stripped = v.strip()
+            if stripped.startswith("["):
                 try:
-                    return json.loads(v)
+                    parsed = json.loads(stripped)
+                    if isinstance(parsed, list):
+                        return [str(item) for item in parsed]
                 except Exception:
                     pass
-            return [i.strip() for i in v.split(",") if i.strip()]
-        elif isinstance(v, list):
-            return v
+            # Split comma-delimited strings or handle "*"
+            origins = [origin.strip() for origin in stripped.split(",") if origin.strip()]
+            return origins if origins else ["*"]
         return [
             "http://localhost:5173",
             "http://localhost:3000",
             "http://localhost:8000",
-            "http://127.0.0.1:5173",
-            "http://127.0.0.1:8000",
         ]
 
-    class Config:
-        case_sensitive = True
-        env_file = ".env"
+    model_config = {"case_sensitive": True, "env_file": ".env", "extra": "ignore"}
 
 
 settings = Settings()

@@ -24,6 +24,7 @@ class MLModelManager:
         if cls._instance is None:
             cls._instance = super(MLModelManager, cls).__new__(cls)
             cls._instance.artifacts = None
+            cls._instance.load_error = None
             cls._instance._load_artifacts()
         return cls._instance
 
@@ -32,11 +33,17 @@ class MLModelManager:
         artifact_path = os.path.join(models_dir, "ml_models", "solar_wind_ml_artifacts.joblib")
         
         if not os.path.exists(artifact_path):
-            raise FileNotFoundError(
-                f"ML model artifact file not found at {artifact_path}. Run train_models.py first."
-            )
+            self.load_error = f"ML model artifact file not found at {artifact_path}."
+            return
         
-        self.artifacts = joblib.load(artifact_path)
+        try:
+            self.artifacts = joblib.load(artifact_path)
+            self.load_error = None
+        except Exception as e:
+            self.artifacts = None
+            self.load_error = f"Error loading ML artifacts: {str(e)}"
+            import logging
+            logging.getLogger("solar_wind_app").error(f"Failed to load ML artifacts: {e}", exc_info=True)
 
 def get_ml_manager() -> MLModelManager:
     return MLModelManager()
@@ -556,16 +563,17 @@ def check_ml_capabilities_health() -> Dict[str, Any]:
         }
 
     if not artifacts or not isinstance(artifacts, dict):
+        err_msg = getattr(manager, "load_error", None) or "Artifacts empty"
         return {
             "is_operational": False,
             "active_count": 0,
             "total_count": len(capabilities_specs),
             "capabilities_summary": {spec["key"]: "unavailable" for spec in capabilities_specs},
             "capabilities_detail": {
-                spec["key"]: {"status": "unavailable", "name": spec["name"], "error": "Artifacts empty"}
+                spec["key"]: {"status": "unavailable", "name": spec["name"], "error": err_msg}
                 for spec in capabilities_specs
             },
-            "error": "No model artifacts found in manager",
+            "error": err_msg,
         }
 
     capabilities_summary = {}

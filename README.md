@@ -1,6 +1,22 @@
 # 🌞 Solar & Wind Deployment Intelligence Platform
 
-An enterprise-grade web application for renewable energy planners, GIS analysts, and project managers to evaluate, score, forecast, optimize, and intelligently rank candidate solar PV and wind turbine deployment sites — powered by deterministic physics engines and a supplemental AI/ML intelligence layer.
+[![Production Status](https://img.shields.io/badge/Production-Live-success?style=for-the-badge&logo=render&logoColor=white)](https://solar-wind-frontend.onrender.com)
+[![API Docs](https://img.shields.io/badge/FastAPI-Interactive_Swagger-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://solar-wind-backend-7s38.onrender.com/docs)
+[![Database](https://img.shields.io/badge/Database-Supabase_PostGIS-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
+[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
+
+An enterprise-grade hybrid intelligence platform for renewable energy planners, GIS analysts, and project managers. Evaluates, scores, forecasts, optimizes, and ranks candidate solar PV and wind turbine sites — powered by deterministic physics engines and an intelligent 7-model AI/ML prediction layer.
+
+---
+
+## 🌐 Live Production Deployments
+
+| Component | Service | Live Production URL | Description |
+| :--- | :--- | :--- | :--- |
+| **Frontend Application** | Render Static Site | 🔗 [**solar-wind-frontend.onrender.com**](https://solar-wind-frontend.onrender.com) | Responsive React UI, GIS Map Viewer, Project Dashboard |
+| **Backend REST API** | Render Docker Web Service | 🔗 [**solar-wind-backend-7s38.onrender.com**](https://solar-wind-backend-7s38.onrender.com) | FastAPI REST service with physics math & ML inference |
+| **Interactive API Docs** | Swagger UI | 🔗 [**solar-wind-backend-7s38.onrender.com/docs**](https://solar-wind-backend-7s38.onrender.com/docs) | Interactive testing for all endpoints & ML models |
+| **Database & GIS** | Supabase Managed | 🗄️ **Supabase Cloud (PostgreSQL 15 + PostGIS 3.3)** | Spatial geometry storage, RBAC roles, persistent project records |
 
 ---
 
@@ -11,219 +27,167 @@ An enterprise-grade web application for renewable energy planners, GIS analysts,
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.x-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
 ![Leaflet](https://img.shields.io/badge/Leaflet-GIS-199900?style=for-the-badge&logo=leaflet&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?style=for-the-badge&logo=fastapi&logoColor=white)
-![Python](https://img.shields.io/badge/Python-3.12+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
 ![PostGIS](https://img.shields.io/badge/PostGIS-3.3-636363?style=for-the-badge&logo=postgresql&logoColor=white)
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-ML-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
 ---
 
-## ✨ Key Features
+## ✨ Key Platform Features
 
 ### 🔐 Security & Access Control
-- JWT Bearer Token authentication
-- 4-tier Role-Based Access Control (RBAC): `ENERGY_PLANNER`, `GIS_ANALYST`, `PROJECT_MANAGER`, `ADMINISTRATOR`
+- **JWT Bearer Token Authentication**: Secure token-based session lifecycle management.
+- **Role-Based Access Control (RBAC)**: 4 distinct roles:
+  - `ENERGY_PLANNER`: Energy yield modeling, suitability scoring, and generation forecasting.
+  - `GIS_ANALYST`: GIS spatial layer ingestion, DEM slope analysis, and setback buffer zone verification.
+  - `PROJECT_MANAGER`: Lifecycle tracking, target capacity planning, and capital budget management.
+  - `ADMINISTRATOR`: User RBAC administration, audit log inspection, and system metrics.
 
 ### 🗺️ Geospatial Intelligence (GIS)
-- Interactive Leaflet 1.9.4 map with 10 spatial layer overlays
-- PostGIS `EPSG:4326` geometry for precise site coordinate storage
-- DEM slope analysis, road/grid proximity, setback buffer zones
-- OpenStreetMap Overpass API integration for infrastructure layers
+- **Interactive Leaflet 1.9.4 Mapping**: Multi-layer spatial visualization with high-resolution map tiles.
+- **PostGIS Vector Geometries**: Native `EPSG:4326` geographic storage (`POINT`, `POLYGON`).
+- **Terrain & Slope Analysis**: DEM slope calculation, road and power grid proximity checks, environmental exclusions.
+- **OpenStreetMap Overpass API**: Automated real-world infrastructure layer ingestion.
 
-### 🌦️ Environmental Data Engine
-- Automated satellite data retrieval from NASA POWER, Open-Meteo, SRTM elevation API
-- Solar irradiance (GHI, DNI, DHI), wind speed, temperature, humidity, and terrain data
+### 🌦️ Real-Time Environmental Data
+- Automated weather and solar irradiance telemetry from **NASA POWER API**, **Open-Meteo**, and **SRTM Elevation API**.
+- Tracks Global Horizontal Irradiance (GHI), Direct Normal Irradiance (DNI), Diffuse Horizontal Irradiance (DHI), hub-height wind speed, surface temperature, and atmospheric pressure.
 
-### ☀️💨 Deterministic Physics Engines
-- **Solar**: `E = GHI × A × η × PR` — annual AC yield (MWh/yr)
-- **Wind**: `P/A = ½ρv³` — Wind Power Density, IEC Class I–IV turbine classification
-- **Suitability**: 5-Factor MCDA weighted index (Resource 35%, Geographic 25%, Infrastructure 15%, Environmental 15%, Economic 10%)
-- **Forecast**: 25-year generation with degradation curve and tariff revenue projections
-- **Optimization**: MW capacity array density with terrain exclusion zones
+### ☀️ Deterministic Engineering Physics Engines
+- **Solar AC Yield**: $E = \text{GHI} \times A \times \eta \times \text{PR}$ — annual AC generation in MWh/year.
+- **Wind Power Density**: $\frac{P}{A} = \frac{1}{2}\rho v^3$ — IEC Class I–IV wind turbine assessment.
+- **MCDA Suitability Index**: 5-Factor multi-criteria decision analysis (Resource 35%, Geographic 25%, Infrastructure 15%, Environmental 15%, Economic 10%).
+- **25-Year Lifecycle Forecast**: Annual degradation modeling (PV 0.5%/yr, Wind 1.2%/yr), tariff revenue, and net cash flow.
 
-### 🤖 AI/ML Intelligence Layer (v2.0.0)
+### 🤖 AI/ML Intelligence Layer (7 Capabilities)
+Seven scikit-learn models provide predictive intelligence alongside deterministic physics calculations:
 
-Seven machine learning models provide **supplemental intelligence** alongside deterministic calculations:
-
-| Model | Algorithm | Purpose |
-|:---|:---|:---|
-| Solar Energy Predictor | GradientBoostingRegressor | Predict annual AC yield (MWh/yr) |
-| Wind Energy Predictor | RandomForestRegressor | Predict annual wind AEP (MWh/yr) |
-| Site Suitability Classifier | RandomForestClassifier | Classify sites: EXCELLENT / GOOD / MODERATE / POOR |
-| Candidate Site Ranker | Explainable Heuristic | Rank and explain multi-site candidates |
-| Monthly Energy Forecaster | GradientBoostingRegressor | Monthly energy output projection |
-| Investment Payback & Risk | GradientBoosting + Classifier | Payback years + LOW / MEDIUM / HIGH risk |
-| Technology Recommender | RandomForestClassifier | Recommend SOLAR / WIND / HYBRID |
-
-> ⚠️ **AI/ML Development Disclaimer**: AI/ML models are trained on a **5,000-sample synthetic development dataset calibrated using renewable-energy physical relationships**. The models are intended for demonstration and development purposes and **do not replace physical engineering calculations**. All authoritative yield, suitability, and financial figures are produced by the deterministic physics engines.
-
-### 📊 Analytics & Reporting
-- Executive role-specific dashboards (Energy Planner, GIS Analyst, Project Manager, Administrator)
-- Multi-site benchmarking across 18 physical and financial metrics
-- Styled PDF reports (ReportLab) and multi-sheet Excel workbooks (OpenPyXL)
+| # | Model Capability | Architecture | Target Output |
+|:---|:---|:---|:---|
+| 1 | **Solar Energy Predictor** | `GradientBoostingRegressor` | Annual AC yield ($MWh/year$) with $\pm1.96 \times \text{RMSE}$ interval |
+| 2 | **Wind Energy Predictor** | `RandomForestRegressor` | Annual wind energy production ($MWh/year$) |
+| 3 | **Site Suitability Classifier** | `RandomForestClassifier` | `EXCELLENT`, `GOOD`, `MODERATE`, `POOR` classification |
+| 4 | **Candidate Site Ranker** | `Explainable Heuristic Ranker` | Multi-site benchmark rank with factor breakdown |
+| 5 | **Monthly Energy Forecaster** | `GradientBoostingRegressor` | 12-month generation seasonality curve |
+| 6 | **Investment Payback & Risk** | `GradientBoosting` + `Classifier` | Payback duration (years) & `LOW` / `MEDIUM` / `HIGH` risk rating |
+| 7 | **Technology Recommender** | `RandomForestClassifier` | Recommended deployment: `SOLAR`, `WIND`, or `HYBRID` |
 
 ---
 
 ## 🏗️ Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                React + Vite Frontend                    │
-│   (White + Orange Design System, Tailwind, Leaflet)    │
-└──────────────────────┬──────────────────────────────────┘
-                       │ REST / JSON (JWT)
-┌──────────────────────▼──────────────────────────────────┐
-│          FastAPI Backend (Python 3.12+)                 │
-│  ┌──────────────────┐  ┌─────────────────────────────┐  │
-│  │ Deterministic    │  │  AI/ML Intelligence Layer   │  │
-│  │ Physics Engines  │  │  (scikit-learn, joblib)     │  │
-│  │ (Solar, Wind,    │  │  7 Models — Supplemental    │  │
-│  │ Suitability,     │  │  Predictions Only           │  │
-│  │ Forecast, Opt)   │  └─────────────────────────────┘  │
-│  └────────┬─────────┘                                   │
-└───────────┼─────────────────────────────────────────────┘
-            │ SQLAlchemy ORM
-┌───────────▼─────────────────────────────────────────────┐
-│        PostgreSQL 15 + PostGIS 3.3                      │
-│        (Spatial Geometry, Vector Layers, Analytics)     │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                    React + Vite Frontend                     │
+│        (Leaflet GIS, Tailwind CSS, Axios, Modern Dark UI)    │
+│            https://solar-wind-frontend.onrender.com          │
+└──────────────────────────────┬───────────────────────────────┘
+                               │ HTTPS / JSON (JWT Bearer Token)
+┌──────────────────────────────▼───────────────────────────────┐
+│                FastAPI Backend (Python 3.11+)                │
+│         https://solar-wind-backend-7s38.onrender.com         │
+│  ┌───────────────────────────┐  ┌─────────────────────────┐  │
+│  │   Deterministic Engines   │  │   AI/ML Intelligence    │  │
+│  │  - Solar Yield Engine     │  │  - 7 Trained Models     │  │
+│  │  - Wind Density Engine    │  │  - Feature Scalers      │  │
+│  │  - MCDA Suitability (5F)  │  │  - Prediction Intervals │  │
+│  │  - 25-Year Cashflow Model │  │  - Tech Recommendation  │  │
+│  └─────────────┬─────────────┘  └─────────────────────────┘  │
+└────────────────┼─────────────────────────────────────────────┘
+                 │ SQLAlchemy ORM (PostgreSQL Dialect)
+┌────────────────▼─────────────────────────────────────────────┐
+│             Supabase PostgreSQL 15 + PostGIS 3.3             │
+│            (Spatial Geometry, RBAC, Data Isolation)          │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 👥 User Roles
+## 🚀 Running Locally
 
-| Role | Purpose |
-| :--- | :--- |
-| `ENERGY_PLANNER` | Energy yield modeling, suitability scoring, forecasting, and report exporting |
-| `GIS_ANALYST` | GIS spatial layer ingestion, DEM slope analysis, and setback buffer zone checks |
-| `PROJECT_MANAGER` | Project lifecycle oversight, target capacity planning, and budget management |
-| `ADMINISTRATOR` | Global user administration, role assignment, and audit log monitoring |
+You can run the full stack locally using either Docker Compose or direct native processes:
 
----
-
-## 🚀 Run Locally (Docker Compose)
-
-### Prerequisites
-
-- **Git**
-- **Docker Desktop** (with WSL2 backend on Windows)
-
-### 1. Clone the Repository
+### Option A: Using Docker Compose
 
 ```bash
+# 1. Clone repository
 git clone https://github.com/ARYAN-SINGH-10/solar-and-wind.git
 cd solar-and-wind
-```
 
-### 2. Configure Environment
-
-```powershell
-# Windows PowerShell
-Copy-Item .env.example .env
-```
-
-```bash
-# Linux / macOS
+# 2. Configure environment file
 cp .env.example .env
-```
 
-Edit `.env` and set a strong `SECRET_KEY` for any shared deployment.
-
-### 3. Start the Full Stack
-
-```bash
+# 3. Spin up full 3-container stack
 docker compose up -d --build
-```
 
-Verify all 3 services are running:
-
-```bash
+# 4. View running services
 docker compose ps
 ```
 
-Expected:
-```
-NAME                  STATUS
-solar_wind_postgres   running (healthy)
-solar_wind_backend    running (healthy)
-solar_wind_frontend   running (healthy)
-```
+Local access:
+- **Frontend App**: [http://localhost:5173](http://localhost:5173) (or `http://localhost`)
+- **Backend API**: [http://localhost:8000](http://localhost:8000)
+- **Interactive Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-### 4. Access Application Services
+### Option B: Running Without Docker
 
-| Service | URL |
-|:---|:---|
-| **Web Application** | http://localhost |
-| **Swagger API Docs** | http://localhost:8000/docs |
-| **Backend Health** | http://localhost:8000/api/v1/health |
-
-### 5. Stop the Application
-
+#### Backend:
 ```bash
-docker compose down
+cd backend
+python -m venv venv
+# Windows:
+.\venv\Scripts\activate
+# Linux/macOS:
+source venv/bin/activate
+
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
 ```
 
-### 6. Restart (No Rebuild)
-
+#### Frontend:
 ```bash
-docker compose up -d
+cd frontend
+npm install
+npm run dev
 ```
 
 ---
 
-## 🤖 AI/ML API Endpoints
+## 🤖 AI/ML API Reference
 
-All ML endpoints are available under the **AI/ML Intelligence Layer** tag in Swagger:
+All machine learning inference endpoints are available under the `/api/v1/ml` route prefix:
 
-| Method | Endpoint | Purpose |
+| Method | Endpoint | Description |
 |:---|:---|:---|
-| POST | `/api/v1/ml/solar/predict` | Solar ML energy prediction |
-| POST | `/api/v1/ml/wind/predict` | Wind ML energy prediction |
-| POST | `/api/v1/ml/suitability/predict` | Site suitability ML classification |
-| POST | `/api/v1/ml/rank-sites` | Explainable multi-site candidate ranking |
-| POST | `/api/v1/ml/forecast/predict` | ML monthly energy forecast |
-| POST | `/api/v1/ml/investment/predict` | Investment payback & risk ML |
-| POST | `/api/v1/ml/technology/recommend` | Technology recommendation ML |
+| `POST` | `/api/v1/ml/solar/predict` | Predict annual solar generation with confidence intervals |
+| `POST` | `/api/v1/ml/wind/predict` | Predict wind energy output from aerodynamic parameters |
+| `POST` | `/api/v1/ml/suitability/predict` | Classify multi-factor site suitability |
+| `POST` | `/api/v1/ml/rank-sites` | Benchmark and rank multiple candidate locations |
+| `POST` | `/api/v1/ml/forecast/predict` | Predict 12-month generation seasonality |
+| `POST` | `/api/v1/ml/investment/predict` | Predict capital payback period and risk category |
+| `POST` | `/api/v1/ml/technology/recommend` | Determine optimal technology (Solar, Wind, Hybrid) |
+| `GET`  | `/api/v1/health` | Comprehensive system, database, and ML health status |
 
 ---
 
-## 📍 GIS & PostGIS Coordinate Convention
+## 🧪 Automated Testing Suite
 
-> ⚠️ Coordinate order differs between Leaflet and PostGIS.
-
-- **Frontend (Leaflet)**: `[latitude, longitude]` — e.g. `[23.2599, 77.4126]`
-- **Backend (PostGIS)**: `POINT(longitude latitude)` — OGC/WKT standard:
-  ```sql
-  ST_SetSRID(ST_MakePoint(77.4126, 23.2599), 4326)
-  ```
-
----
-
-## 🧪 Testing Suite
+The repository includes a comprehensive unit and integration test suite:
 
 ```bash
-# FastAPI route + auth tests (9 tests)
-python backend/tests/test_platform.py
-
-# Wind power density physics tests (19 tests)
-python backend/tests/test_wind_calculation.py
-
-# Unit & formula verification suite (5 tests)
-python backend/tests/run_tests.py
-
-# FastAPI integration tests — no DB required (6 tests)
-python backend/tests/run_integration_tests.py
-
-# ML engine tests — 7 models (9 tests)
+# Run ML engine inference & validation tests
 python backend/tests/test_ml_engine.py
 
-# PostGIS site creation tests (requires Docker DB)
-python backend/tests/test_postgis_site_creation.py
+# Run deterministic wind calculations verification
+python backend/tests/test_wind_calculation.py
 
-# End-to-end platform workflow (requires Docker DB)
-python backend/tests/run_end_to_end_test.py
+# Run API endpoint access control & data isolation tests
+python backend/tests/test_data_isolation.py
+
+# Run general formula verification
+python backend/tests/run_tests.py
 ```
 
 ---
@@ -235,41 +199,36 @@ solar-and-wind/
 ├── backend/
 │   ├── app/
 │   │   ├── api/v1/endpoints/   # REST API route handlers
-│   │   ├── core/               # Config, database, JWT security
-│   │   ├── ml_models/          # ML training script + trained artifact (.joblib)
-│   │   ├── models/             # SQLAlchemy ORM models
-│   │   ├── schemas/            # Pydantic schemas
-│   │   └── services/           # Physics engines, ML service, GIS, reports
-│   └── tests/                  # Unit, integration, and ML test suites
-├── database/
-│   ├── Dockerfile              # PostgreSQL 15 + PostGIS 3.3 image
-│   └── init.sql                # Schema, RBAC, seed data
-├── docs/
-│   ├── architecture.md         # System architecture specification
-│   └── workflow.md             # Platform workflow guide
+│   │   ├── core/               # App configuration, database connection, JWT security
+│   │   ├── ml_models/          # Trained model artifacts (.joblib) & training pipeline
+│   │   ├── models/             # SQLAlchemy ORM database models
+│   │   ├── schemas/            # Pydantic validation schemas
+│   │   └── services/           # Physics math, GIS processing, ML service, report generators
+│   ├── tests/                  # Unit tests, integration tests, ML test suite
+│   ├── Dockerfile              # Production Python Docker image
+│   └── requirements.txt        # Python backend dependencies
 ├── frontend/
 │   ├── src/
-│   │   ├── components/         # Shared UI components
-│   │   ├── context/            # AuthContext (JWT state)
-│   │   ├── pages/              # All application pages
-│   │   └── services/           # API clients (mlService.js, analysisService.js, …)
-│   └── Dockerfile              # Nginx production server
-├── .env.example                # Safe configuration template (no real credentials)
-├── .gitignore
-├── docker-compose.yml          # 3-service Docker Compose stack
-└── README.md
+│   │   ├── components/         # Shared UI components (Navigation, Layout, Modal, Alerts)
+│   │   ├── context/            # AuthContext (JWT state management)
+│   │   ├── pages/              # Project Dashboard, Map GIS Explorer, Analysis, Admin
+│   │   └── services/           # Axios HTTP API clients
+│   ├── package.json            # Node.js dependencies
+│   └── vite.config.js          # Vite configuration
+├── docs/                       # Technical documentation and workflow guides
+├── render.yaml                 # Render cloud deployment blueprint
+├── docker-compose.yml          # Local multi-service orchestration
+└── README.md                   # Project documentation
 ```
 
 ---
 
-## 📚 Technical Documentation
+## 👥 Contributors & Authors
 
-- 📐 **[System Architecture Specification](docs/architecture.md)**
-- 🔄 **[Platform Workflow Guide](docs/workflow.md)**
-- 📋 **[Milestone 1 Design & Dataset Report](milestone1_design_and_documentation.md)**
+- **Aryan Singh** ([@ARYAN-SINGH-10](https://github.com/ARYAN-SINGH-10))
 
 ---
 
 ## 📄 License
 
-**License**: Academic Project / Not specified.
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.

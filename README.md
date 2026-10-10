@@ -1,6 +1,6 @@
 # 🌞 Solar & Wind Deployment Intelligence Platform
 
-[![Production Status](https://img.shields.io/badge/Production-Live-success?style=for-the-badge&logo=render&logoColor=white)](https://solar-wind-frontend.onrender.com)
+[![Production Status](https://img.shields.io/badge/Production-Live-success?style=for-the-badge&logo=render&logoColor=white)](https://solar-wind-frontend-gp17.onrender.com)
 [![API Docs](https://img.shields.io/badge/FastAPI-Interactive_Swagger-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://solar-wind-backend-7s38.onrender.com/docs)
 [![Database](https://img.shields.io/badge/Database-Supabase_PostGIS-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
@@ -13,7 +13,7 @@ An enterprise-grade hybrid intelligence platform for renewable energy planners, 
 
 | Component | Service | Live Production URL | Description |
 | :--- | :--- | :--- | :--- |
-| **Frontend Application** | Render Static Site | 🔗 [**solar-wind-frontend.onrender.com**]([https://solar-wind-frontend.onrender.com](https://solar-wind-frontend-gp17.onrender.com)) | Responsive React UI, GIS Map Viewer, Project Dashboard |
+| **Frontend Application** | Render Static Site | 🔗 [**solar-wind-frontend-gp17.onrender.com**](https://solar-wind-frontend-gp17.onrender.com) | Responsive React UI, GIS Map Viewer, Project Dashboard |
 | **Backend REST API** | Render Docker Web Service | 🔗 [**solar-wind-backend-7s38.onrender.com**](https://solar-wind-backend-7s38.onrender.com) | FastAPI REST service with physics math & ML inference |
 | **Interactive API Docs** | Swagger UI | 🔗 [**solar-wind-backend-7s38.onrender.com/docs**](https://solar-wind-backend-7s38.onrender.com/docs) | Interactive testing for all endpoints & ML models |
 | **Database & GIS** | Supabase Managed | 🗄️ **Supabase Cloud (PostgreSQL 15 + PostGIS 3.3)** | Spatial geometry storage, RBAC roles, persistent project records |
@@ -82,7 +82,7 @@ Seven scikit-learn models provide predictive intelligence alongside deterministi
 ┌──────────────────────────────────────────────────────────────┐
 │                    React + Vite Frontend                     │
 │        (Leaflet GIS, Tailwind CSS, Axios, Modern Dark UI)    │
-│            https://solar-wind-frontend.onrender.com          │
+│         https://solar-wind-frontend-gp17.onrender.com        │
 └──────────────────────────────┬───────────────────────────────┘
                                │ HTTPS / JSON (JWT Bearer Token)
 ┌──────────────────────────────▼───────────────────────────────┐
